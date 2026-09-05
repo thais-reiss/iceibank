@@ -84,6 +84,10 @@ public class ContasController {
         }
 
         double valor = Double.parseDouble(corpo.get("valor").toString());
+        if (valor > 2000) {
+            return ResponseEntity.status(400).body(Map.of("erro", "Saque não pode ser superior a R$ 2000,00."));
+        }
+        
         if (conta.getSaldo() < valor) {
             return ResponseEntity.status(400).body(Map.of("erro", "Saldo insuficiente."));
         }
