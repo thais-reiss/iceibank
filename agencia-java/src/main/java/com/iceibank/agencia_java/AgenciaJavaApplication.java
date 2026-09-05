@@ -1,4 +1,4 @@
-package com.iceibanck.agencia_java;
+package com.iceibank.agencia_java;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
