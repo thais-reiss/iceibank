@@ -5,3 +5,8 @@ agencia/data/*.jsonl
 # Sistema
 Thumbs.db
 desktop.ini
+
+#Java
+*.class 
+agencia-java/target/
+agencia-java/data/*.jsonl
