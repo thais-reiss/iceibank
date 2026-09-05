@@ -16,6 +16,7 @@ public class ContasController {
 
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
+    private static final double LIMITE_SAQUE = 2000;
 
     public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado) {
         this.agenciaConfig = agenciaConfig;
@@ -84,7 +85,7 @@ public class ContasController {
         }
 
         double valor = Double.parseDouble(corpo.get("valor").toString());
-        if (valor > 2000) {
+        if (valor > LIMITE_SAQUE) {
             return ResponseEntity.status(400).body(Map.of("erro", "Saque não pode ser superior a R$ 2000,00."));
         }
         
