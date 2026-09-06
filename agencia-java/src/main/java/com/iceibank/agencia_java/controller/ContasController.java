@@ -3,8 +3,7 @@ package com.iceibank.agencia_java.controller;
 import com.iceibank.agencia_java.config.AgenciaConfig;
 import com.iceibank.agencia_java.config.AgenciaEstado;
 import com.iceibank.agencia_java.model.ContaModel;
-import com.iceibank.agencia_java.service.JwtService;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,13 +17,15 @@ public class ContasController {
 
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
-    private static final double LIMITE_SAQUE = 2000;
-    private final JwtService jwtService;
 
-    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, JwtService jwtService) {
+    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado) {
         this.agenciaConfig = agenciaConfig;
         this.estado = estado;
-        this.jwtService = jwtService;
+    }
+
+    private boolean naoEDono(int id, HttpServletRequest request) {
+        Integer idAutenticado = (Integer) request.getAttribute("idContaAutenticada");
+        return idAutenticado == null || idAutenticado != id;
     }
 
     @PostMapping
@@ -52,7 +53,10 @@ public class ContasController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> consultarSaldo(@PathVariable int id) {
+    public ResponseEntity<?> consultarSaldo(@PathVariable int id, HttpServletRequest request) {
+        if (naoEDono(id, request)) {
+            return ResponseEntity.status(403).body(Map.of("erro", "Você não tem permissão para acessar esta conta."));
+        }
         ContaModel conta = estado.getContas().get(id);
         if (conta == null) {
             return ResponseEntity.status(404).body(Map.of("erro", "Conta não encontrada nesta agência."));
@@ -61,7 +65,10 @@ public class ContasController {
     }
 
     @PostMapping("/{id}/depositar")
-    public ResponseEntity<?> depositar(@PathVariable int id, @RequestBody Map<String, Object> corpo) throws IOException {
+    public ResponseEntity<?> depositar(@PathVariable int id, @RequestBody Map<String, Object> corpo, HttpServletRequest request) throws IOException {
+        if (naoEDono(id, request)) {
+            return ResponseEntity.status(403).body(Map.of("erro", "Você não tem permissão para acessar esta conta."));
+        }
         ContaModel conta = estado.getContas().get(id);
         if (conta == null) {
             return ResponseEntity.status(404).body(Map.of("erro", "Conta não encontrada nesta agência."));
@@ -82,17 +89,19 @@ public class ContasController {
     }
 
     @PostMapping("/{id}/sacar")
-    public ResponseEntity<?> sacar(@PathVariable int id, @RequestBody Map<String, Object> corpo) throws IOException {
+    public ResponseEntity<?> sacar(@PathVariable int id, @RequestBody Map<String, Object> corpo, HttpServletRequest request) throws IOException {
+        if (naoEDono(id, request)) {
+            return ResponseEntity.status(403).body(Map.of("erro", "Você não tem permissão para acessar esta conta."));
+        }
         ContaModel conta = estado.getContas().get(id);
         if (conta == null) {
             return ResponseEntity.status(404).body(Map.of("erro", "Conta não encontrada nesta agência."));
         }
 
         double valor = Double.parseDouble(corpo.get("valor").toString());
-        if (valor > LIMITE_SAQUE) {
+        if (valor > 2000) {
             return ResponseEntity.status(400).body(Map.of("erro", "Saque não pode ser superior a R$ 2000,00."));
         }
-        
         if (conta.getSaldo() < valor) {
             return ResponseEntity.status(400).body(Map.of("erro", "Saldo insuficiente."));
         }
@@ -107,28 +116,5 @@ public class ContasController {
         estado.getRegistro().registrar("SAQUE", ts, detalhes);
 
         return ResponseEntity.ok(conta);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credenciais) {
-        String idStr = credenciais.get("id");
-        String senha = credenciais.get("senha");
-
-        if (idStr == null || senha == null) {
-            return ResponseEntity.status(400).body(Map.of("erro", "ID e senha são obrigatórios."));
-        }
-
-        int id = Integer.parseInt(idStr);
-        ContaModel conta = estado.getContas().get(id);
-
-        if (conta == null || !conta.getSenha().equals(senha)) {
-            return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas."));
-        }
-
-        String token = jwtService.gerarToken(id);
-        return ResponseEntity.ok(Map.of(
-                "mensagem", "Login bem-sucedido.",
-                "token", token
-        ));
     }
 }

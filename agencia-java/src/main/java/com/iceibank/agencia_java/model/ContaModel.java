@@ -6,7 +6,6 @@ public class ContaModel {
     private int id;
     private String nomeAluno;
     private double saldo;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
     public ContaModel() { }
@@ -42,12 +41,12 @@ public class ContaModel {
         this.saldo = saldo;
     }
 
-        public String getSenha() {
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    public String getSenha() {
         return senha;
     }
 
     public void setSenha(String senha) {
         this.senha = senha;
     }
-
 }
