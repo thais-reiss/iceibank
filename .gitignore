@@ -10,3 +10,5 @@ desktop.ini
 *.class 
 agencia-java/target/
 agencia-java/data/*.jsonl
+
+.vscode
