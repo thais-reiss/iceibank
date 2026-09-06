@@ -4,13 +4,15 @@ public class ContaModel {
      private int id;
     private String nomeAluno;
     private double saldo;
+    private String senha;
 
     public ContaModel() { }
 
-    public ContaModel(int id, String nomeAluno, double saldo) {
+    public ContaModel(int id, String nomeAluno, double saldo, String senha) {
         this.id = id;
         this.nomeAluno = nomeAluno;
         this.saldo = saldo;
+        this.senha = senha;
     }
 
     public int getId() {
@@ -36,4 +38,13 @@ public class ContaModel {
     public void setSaldo(double saldo) {
         this.saldo = saldo;
     }
+
+        public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
 }
