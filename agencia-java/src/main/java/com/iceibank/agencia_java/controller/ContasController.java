@@ -104,4 +104,23 @@ public class ContasController {
 
         return ResponseEntity.ok(conta);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credenciais) {
+        
+        String idStr = credenciais.get("id");
+        String senha = credenciais.get("senha");
+
+        if (idStr == null || senha == null) {
+            return ResponseEntity.status(400).body(Map.of("erro", "ID e senha são obrigatórios."));
+        }
+
+        int id = Integer.parseInt(idStr);
+        ContaModel conta = estado.getContas().get(id);
+
+        if (conta == null || !conta.getSenha().equals(senha)) {
+            return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas."));
+        }
+        return ResponseEntity.ok(Map.of("mensagem", "Login bem-sucedido."));
+    }
 }

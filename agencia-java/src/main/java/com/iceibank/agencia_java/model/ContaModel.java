@@ -1,9 +1,12 @@
 package com.iceibank.agencia_java.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ContaModel {
-     private int id;
+    private int id;
     private String nomeAluno;
     private double saldo;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
     public ContaModel() { }
