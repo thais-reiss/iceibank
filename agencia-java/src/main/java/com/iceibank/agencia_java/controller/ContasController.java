@@ -3,6 +3,8 @@ package com.iceibank.agencia_java.controller;
 import com.iceibank.agencia_java.config.AgenciaConfig;
 import com.iceibank.agencia_java.config.AgenciaEstado;
 import com.iceibank.agencia_java.model.ContaModel;
+import com.iceibank.agencia_java.service.JwtService;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +19,12 @@ public class ContasController {
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
     private static final double LIMITE_SAQUE = 2000;
+    private final JwtService jwtService;
 
-    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado) {
+    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, JwtService jwtService) {
         this.agenciaConfig = agenciaConfig;
         this.estado = estado;
+        this.jwtService = jwtService;
     }
 
     @PostMapping
@@ -107,7 +111,6 @@ public class ContasController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credenciais) {
-        
         String idStr = credenciais.get("id");
         String senha = credenciais.get("senha");
 
@@ -121,6 +124,11 @@ public class ContasController {
         if (conta == null || !conta.getSenha().equals(senha)) {
             return ResponseEntity.status(401).body(Map.of("erro", "Credenciais inválidas."));
         }
-        return ResponseEntity.ok(Map.of("mensagem", "Login bem-sucedido."));
+
+        String token = jwtService.gerarToken(id);
+        return ResponseEntity.ok(Map.of(
+                "mensagem", "Login bem-sucedido.",
+                "token", token
+        ));
     }
 }
