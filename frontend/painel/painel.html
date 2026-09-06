@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Painel principal | ICEIBank</title>
+	<link rel="stylesheet" href="painel.css">
+</head>
+
+<body>
+	<main class="painel">
+		<header class="cabecalho">
+			<div>
+				<p class="eyebrow">ICEIBANK</p>
+				<h1>Painel principal</h1>
+				<p class="identificacao">Conta <strong id="idContaLogada">--</strong></p>
+			</div>
+			<button class="botao botao-secundario" id="btnSair" type="button">Sair</button>
+		</header>
+
+		<div class="mensagem-api" id="mensagemApi" role="alert" aria-live="polite" hidden></div>
+
+		<section class="saldo" aria-labelledby="tituloSaldo">
+			<div>
+				<p class="rotulo-secao">Visão geral</p>
+				<h2 id="tituloSaldo">Saldo disponível</h2>
+			</div>
+			<strong class="valor-saldo" id="saldoAtual">R$ 0,00</strong>
+			<button class="botao botao-claro" id="btnAtualizarSaldo" type="button">Atualizar saldo</button>
+		</section>
+
+		<div class="operacoes">
+			<section class="cartao-operacao" aria-labelledby="tituloDeposito">
+				<div class="titulo-operacao">
+					<p class="numero-operacao">01</p>
+					<div>
+						<p class="rotulo-secao">Movimentação</p>
+						<h2 id="tituloDeposito">Depositar</h2>
+					</div>
+				</div>
+				<form id="formDeposito">
+					<label for="valorDeposito">Valor</label>
+					<div class="campo-com-prefixo">
+						<span>R$</span>
+						<input type="number" id="valorDeposito" name="valor" min="0.01" step="0.01" placeholder="0,00" required>
+					</div>
+					<button class="botao botao-principal" type="submit">Depositar</button>
+				</form>
+			</section>
+
+			<section class="cartao-operacao" aria-labelledby="tituloSaque">
+				<div class="titulo-operacao">
+					<p class="numero-operacao">02</p>
+					<div>
+						<p class="rotulo-secao">Movimentação</p>
+						<h2 id="tituloSaque">Sacar</h2>
+					</div>
+				</div>
+				<form id="formSaque">
+					<label for="valorSaque">Valor</label>
+					<div class="campo-com-prefixo">
+						<span>R$</span>
+						<input type="number" id="valorSaque" name="valor" min="0.01" step="0.01" placeholder="0,00" required>
+					</div>
+					<button class="botao botao-principal" type="submit">Sacar</button>
+				</form>
+			</section>
+
+			<section class="cartao-operacao cartao-transferencia" aria-labelledby="tituloTransferencia">
+				<div class="titulo-operacao">
+					<p class="numero-operacao">03</p>
+					<div>
+						<p class="rotulo-secao">Movimentação</p>
+						<h2 id="tituloTransferencia">Transferir</h2>
+					</div>
+				</div>
+				<form id="formTransferencia">
+					<label for="idContaDestino">ID da conta de destino</label>
+					<input type="number" id="idContaDestino" name="idDestino" min="1" placeholder="Digite o ID da conta" required>
+
+					<label for="valorTransferencia">Valor</label>
+					<div class="campo-com-prefixo">
+						<span>R$</span>
+						<input type="number" id="valorTransferencia" name="valor" min="0.01" step="0.01" placeholder="0,00" required>
+					</div>
+					<button class="botao botao-principal" type="submit">Transferir</button>
+				</form>
+			</section>
+		</div>
+	</main>
+</body>
+
+</html>

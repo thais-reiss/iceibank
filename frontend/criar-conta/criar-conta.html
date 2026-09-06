@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Aluno</title>
+    <link rel="stylesheet" href="criar-conta.css">
+
+</head>
+
+<body>
+    <div class="principal">
+
+        <div class="img">
+            <img src="../imgs/img-criar-conta.jpg" alt="Users">
+        </div>
+
+        <div class="form-container">
+            <div class="titulo">
+                <p class="eyebrow">ICEIBANK</p>
+                <h1><strong>Cadastre-se</strong></h1>
+            </div>
+            <form action="" id="formAluno">
+                <div class="row">
+                    <div class="div-input">
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" name="nome" required>
+                    </div>
+                </div>
+
+                  <div class="row">
+                    <div class="div-input">
+                        <label for="senha">Senha:</label>
+                        <input type="password" id="senha" name="senha" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div  class="div-input">
+                        <label for="idConta">ID da conta:</label>
+                        <input type="number" id="idConta" name="idConta" required>
+                    </div>
+                    <div  class="div-input">
+                        <label for="saldo">Saldo:</label>
+                        <input type="number" id="saldo" name="saldo" required>
+                    </div>
+                </div>
+
+                  <div class="row">
+                    <div  class="div-input">
+                        <label for="agencia">Agência:</label>
+                        <select id="agencia" name="agencia">
+                            <option value="" disabled selected>Agência</option>
+                            <option value="4022">4022</option>
+                            <option value="4023">4023</option>
+                            <option value="4024">4024</option>
+                        </select>
+                    </div>
+                </div>
+
+
+                <button id="btnCadastrar">Cadastrar</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
