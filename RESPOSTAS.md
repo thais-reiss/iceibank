@@ -44,6 +44,18 @@ Ele não seria suficiente, porque só pelos timestamps não dá pra afirmar que 
 
 ## Parte F - Autenticação (JWT)
 
+### Seção 11.1 
+
+- **Um endpoint de login (ex.: POST /auth/login) que recebe credenciais e, se válidas, retorna um token JWT. O formato das credenciais (usuário e senha, id de conta e senha, ou outro modelo) é decisão sua - documente e justifique a escolha em RESPOSTAS.md.**
+
+Eu escolhi usar o formato id da conta e senha porque usar o id da conta como identificador principal permite encontrar os dados de forma direta e rápida na memória, usando estado.getContas().get(id) no AuthController. Isso evita passos extras, como ter que buscar um usuário pelo e-mail ou nome para só depois achar a sua conta. Assim, o código do sistema fica mais simples e o token gerado já fica ligado direto à conta que fará as transações financeiras.
+
+- **Pense e decida: essa chamada interna, agência-a-agência, deveria carregar um token igual às chamadas vindas do frontend, ou é aceitável tratá-la de forma diferente? Justifique sua decisão em RESPOSTAS.md.**
+
+Não é necessário utilizar o mesmo token das chamadas vindas do frontend, pois o token enviado pelo frontend é um JWT usado para autenticar o usuário, identificando qual conta está realizando a operação. Já a comunicação entre agências ocorre entre serviços do sistema, e não diretamente entre um usuário e a aplicação. Por isso, é aceitável tratar essa comunicação de forma diferente, porém ela não deve ficar sem autenticação, pois isso permitiria que requisições externas tentassem se passar por outra agência. Assim,para proteger essa comunicação, eu implementei um token interno compartilhado entre as agências, enviado no cabeçalho das requisições agência-a-agência. Isso mantém a comunicação interna protegida sem misturar a autenticação do usuário com a autenticação entre serviços.
+
+### Seção 11.2 - Perguntas
+
 **1. Qual a diferença entre autenticação e autorização? Sua implementação verifica só uma das duas, ou as duas? Por exemplo: um usuário autenticado consegue sacar de uma conta que não é dele, na sua implementação atual?**
 
 Autenticação é o processo de verificar a identidade do usuário, por exemplo, validando se o token JWT é válido. Autorização é verificar se esse usuário autenticado possui permissão para realizar determinada ação ou acessar determinado recurso. Na minha implementação são verificadas as duas. O sistema primeiro autentica o usuário por meio do token e em cada método do controller de contas é verificado se ele é o dono da conta que ele quer acessar. Assim, um usuário autenticado não consegue sacar, depositar ou consultar o saldo de uma conta que não pertence a ele, pois a implementação verifica se a conta está associada ao usuário autenticado.
@@ -55,3 +67,17 @@ Porque o token possui as informações do usuário e uma assinatura que pode ser
 **3. O que aconteceria com a segurança do sistema se a chave secreta usada para assinar o JWT vazasse?**
 
 Se a chave secreta usada para assinar o JWT vazasse, a segurança do sistema seria comprometida. Uma pessoa que tivesse essa chave poderia criar novos tokens com assinaturas válidas e se passar por outras contas, alterando o ID da conta no token. Se isso acontecesse, seria necessário trocar a chave secreta e invalidar os tokens antigos para recuperar a segurança do sistema.
+
+## Parte G - FrontEnd
+
+**1. Como o frontend “lembra” de reenviar o token em cada requisição depois do login? Descreva, em alto nível, o mecanismo que você implementou.**
+
+Ao realizar o login, o token retornado é armazenado no LocalStorage. Na tela de painel, o JavaScript pega o token da LocalStorage e armazena ele em uma variável, passando ele em cada requisição que exige o token. 
+
+**2. Se o token expirar enquanto alguém está usando o frontend no meio de uma operação, o que acontece na sua implementação? A interface avisa a pessoa usuária, ou ela só vê um erro genérico?**
+
+A interface avisa o usuário por meio de um alert e rediciona ele para a tela de login, para que ele faça o login novamente.
+
+**3.Esta unidade da disciplina trata de arquitetura MVC. No seu frontend, onde fica o “M” (Model), o “V” (View) e o “C” (Controller)? Eles existem de forma clara na sua implementação, ou o código ficou mais misturado do que o padrão sugere?**
+
+O View está principalmente nos arquivos HTML, pois eles são responsáveis pela interface que o usuário visualiza. O Controller está nos arquivos JavaScript, que recebem as ações do usuário, fazem as requisições para a API e controlam o que acontece depois das respostas. Já o Model não existe de forma tão clara no frontend. Os objetos JavaScript criados para enviar e receber dados, como o objeto corpo no cadastro e os objetos de conta retornados pela API, representam os dados do sistema, mas não existe uma classe ou arquivo específico responsável pelo Model. O modelo de fato está mais presente no backend, por meio da classe de modelo, que é ContaModel. Portanto, meu código segue parcialmente a ideia do MVC, onde o HTML representa a View, os arquivos JavaScript funcionam como Controllers e os dados recebidos e enviados pela API representam parcialmente o Model.
