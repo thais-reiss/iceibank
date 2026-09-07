@@ -24,8 +24,13 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
-            throws ServletException, IOException {
+   protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+        throws ServletException, IOException {
+
+    if (request.getMethod().equals("OPTIONS")) {
+        filterChain.doFilter(request, response);
+        return;
+    }
 
         String caminho = request.getRequestURI();
         String metodo = request.getMethod();
