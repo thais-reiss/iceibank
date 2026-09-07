@@ -34,7 +34,6 @@ async function chamarApi(caminho, metodo, corpo) {
 
     const dados = await resposta.json();
 
-    // Token expirado ou inválido
     if (resposta.status === 401) {
         alert('Sua sessão expirou. Você será redirecionado para a tela de login.');
 
@@ -62,7 +61,6 @@ async function atualizarSaldo() {
             `R$ ${conta.saldo.toFixed(2).replace('.', ',')}`;
 
     } catch (erro) {
-        // Se for sessão expirada, o redirecionamento já foi feito
         if (erro.message !== 'Sessão expirada.') {
             alert(erro.message);
         }
