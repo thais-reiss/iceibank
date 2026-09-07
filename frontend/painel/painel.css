@@ -245,6 +245,12 @@ form .botao {
 	}
 }
 
+.mensagem-sucesso {
+	border-left: 4px solid #1d8a4a;
+	background-color: #eafaf0;
+	color: #145c32;
+}
+
 @media (max-width: 759px) {
 	.saldo {
 		grid-template-columns: 1fr auto;
@@ -294,3 +300,4 @@ form .botao {
 		order: 2;
 	}
 }
+
