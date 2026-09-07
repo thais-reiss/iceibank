@@ -41,3 +41,17 @@ Significa que, se um evento causou outro, o evento causador terá um timestamp m
 **2.Baseado no que você observou no passo 3 da tarefa: o relógio de Lamport, sozinho, seria suficiente para um sistema que precisa distinguir com certeza “A e B são concorrentes” de “A aconteceu antes de B”? Por que isso motiva o relógio vetorial do Sprint 2?**
 
 Ele não seria suficiente, porque só pelos timestamps não dá pra afirmar que um evento causou outro. Porque o relógio vetorial consegue, sozinho, demonstrar se um evento causou outro ou se eles são concorrentes. O que permite isso é que, nesse padrão, cada processo guarda um vetor com um contador para cada processo do sistema. Assim, o vetor registra o que aquele processo já realizou ou recebeu de cada outro processo. Ao comparar os vetores de dois eventos, é possível determinar se existe uma relação de causalidade ou se os eventos são concorrentes. 
+
+## Parte F - Autenticação (JWT)
+
+**1. Qual a diferença entre autenticação e autorização? Sua implementação verifica só uma das duas, ou as duas? Por exemplo: um usuário autenticado consegue sacar de uma conta que não é dele, na sua implementação atual?**
+
+Autenticação é o processo de verificar a identidade do usuário, por exemplo, validando se o token JWT é válido. Autorização é verificar se esse usuário autenticado possui permissão para realizar determinada ação ou acessar determinado recurso. Na minha implementação são verificadas as duas. O sistema primeiro autentica o usuário por meio do token e em cada método do controller de contas é verificado se ele é o dono da conta que ele quer acessar. Assim, um usuário autenticado não consegue sacar, depositar ou consultar o saldo de uma conta que não pertence a ele, pois a implementação verifica se a conta está associada ao usuário autenticado.
+
+**2. Por que o servidor não precisa consultar um banco de dados para validar a assinatura de um JWT a cada requisição? O que isso implica sobre escalabilidade, comparado a guardar sessões em memória no servidor?**
+
+Porque o token possui as informações do usuário e uma assinatura que pode ser validada usando a chave secreta. No meu código, isso acontece na classe JwtUtil, no método validarTokenEExtrairId(), que verifica a assinatura do token e extrai o ID da conta. Na classe JwtFilter, o token é recebido e essa validação é feita antes de liberar a requisição. Isso facilita a escalabilidade, porque o servidor não precisa gastar memória guardando a sessão de cada pessoa que está logada, ficando mais leve e rápido. Além disso, se for preciso colocar novos servidores no ar para aguentar muitos acessos, qualquer um deles consegue validar o token na mesma hora só usando a chave secreta, sem precisar ficar sincronizando dados ou dependendo de um banco central.
+
+**3. O que aconteceria com a segurança do sistema se a chave secreta usada para assinar o JWT vazasse?**
+
+Se a chave secreta usada para assinar o JWT vazasse, a segurança do sistema seria comprometida. Uma pessoa que tivesse essa chave poderia criar novos tokens com assinaturas válidas e se passar por outras contas, alterando o ID da conta no token. Se isso acontecesse, seria necessário trocar a chave secreta e invalidar os tokens antigos para recuperar a segurança do sistema.
