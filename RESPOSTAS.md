@@ -81,3 +81,9 @@ A interface avisa o usuário por meio de um alert e rediciona ele para a tela de
 **3.Esta unidade da disciplina trata de arquitetura MVC. No seu frontend, onde fica o “M” (Model), o “V” (View) e o “C” (Controller)? Eles existem de forma clara na sua implementação, ou o código ficou mais misturado do que o padrão sugere?**
 
 O View está principalmente nos arquivos HTML, pois eles são responsáveis pela interface que o usuário visualiza. O Controller está nos arquivos JavaScript, que recebem as ações do usuário, fazem as requisições para a API e controlam o que acontece depois das respostas. Já o Model não existe de forma tão clara no frontend. Os objetos JavaScript criados para enviar e receber dados, como o objeto corpo no cadastro e os objetos de conta retornados pela API, representam os dados do sistema, mas não existe uma classe ou arquivo específico responsável pelo Model. O modelo de fato está mais presente no backend, por meio da classe de modelo, que é ContaModel. Portanto, meu código segue parcialmente a ideia do MVC, onde o HTML representa a View, os arquivos JavaScript funcionam como Controllers e os dados recebidos e enviados pela API representam parcialmente o Model.
+
+## Funcionalidade adicional 
+
+Não é permitido saque superior a 2000 por operação.
+
+## Link do vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
