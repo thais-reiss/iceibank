@@ -22,7 +22,7 @@ Vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
 Abra três terminais do PowerShell. Em cada terminal, navegue até a pasta
 `caminho\até\agencia-java` e execute os comandos correspondentes.
 
-**Terminal 1 - Agência 0**
+**Terminal 1 - Agência 0 - porta: 4022**
 
 ```powershell
 cd caminho\até\agencia-java
@@ -31,7 +31,7 @@ $env:OFFSET=22
 mvn spring-boot:run
 ```
 
-**Terminal 2 - Agência 1**
+**Terminal 2 - Agência 1 - porta: 4023**
 
 ```powershell
 cd caminho\até\agencia-java
@@ -40,7 +40,7 @@ $env:OFFSET=22
 mvn spring-boot:run
 ```
 
-**Terminal 3 - Agência 2**
+**Terminal 3 - Agência 2 - porta: 4024**
 
 ```powershell
 cd caminho\até\agencia-java
