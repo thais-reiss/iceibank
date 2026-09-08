@@ -13,6 +13,8 @@ um token interno para a comunicação entre agências e relógios de Lamport par
 registrar a ordem lógica dos eventos distribuídos. Os eventos são armazenados
 em arquivos JSONL, permitindo analisar a ordem e a causalidade das operações.
 
+Vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
+
 ## Como rodar o sistema
 
 ### Agências Java
