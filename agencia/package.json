@@ -8,7 +8,8 @@
     "start": "node src/app.js"
   },
   "dependencies": {
-    "express": "^5.0.0",
-    "axios": "^1.7.2"
+    "amqplib": "^2.2.0",
+    "axios": "^1.7.2",
+    "express": "^5.0.0"
   }
 }
