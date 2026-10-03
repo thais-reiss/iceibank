@@ -1,4 +1,4 @@
-# Respostas
+# Respostas - Sprint 1
 
 ## Parte B - Relógio de Lamport e registro de eventos
 
@@ -87,3 +87,21 @@ O View está principalmente nos arquivos HTML, pois eles são responsáveis pela
 Não é permitido saque superior a 2000 por operação.
 
 ## Link do vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
+
+---
+
+# Respostas - Sprint 2
+
+## Parte B
+
+**1. Com 3 agências, o vetor tem 3 posições. Se o sistema crescesse para 10 agências, o que aconteceria com o tamanho de cada vetor anexado a cada mensagem? Isso é um problema? Por quê (ou por que não)?**
+
+O vetor cresceria proporcionalmente o número de agências, passando a ter 10 posições. Isso é um problema, pois prejudicaria a escalabilidade do sistema. Com muitas agências, a maior parte das posições seria zero e irrelevante para a mensagem em questão, consumindo banda e espaço desnecessários. Além disso, o relógio vetorial exige saber de antemão quantos processos existem, de forma que se uma agência nova entrasse depois, todas as outras precisariam redimensionar seus vetores.
+
+**2. Dado V1 = [3, 1, 0] e V2 = [3, 2, 0]: qual evento aconteceu primeiro, ou eles são concorrentes? Justifique comparando posição a posição.**
+
+V1 aconteceu primeiro, porque todas as suas posições são menores ou iguais às de V2, com pelo menos uma estritamente menor, no caso a segunda posição.
+
+**3. Dado V1 = [3, 1, 0] e V2 = [1, 3, 0]: qual evento aconteceu primeiro, ou eles são concorrentes? Justifique.**
+
+São concorrentes, porque V1 é maior na primeira posição, V2 é maior na segunda, e na terceira são iguais. Como nenhum vetor domina o outro em todas as posições, não há relação de causa e efeito entre eles.
