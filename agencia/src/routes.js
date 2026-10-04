@@ -10,6 +10,6 @@ router.post('/contas/:id/depositar', contasController.depositar);
 router.post('/contas/:id/sacar', contasController.sacar);
 
 router.post('/transferencias', transferenciasController.transferir);
-router.post('/contas/:id/creditar-remoto', transferenciasController.creditarRemoto);
+// router.post('/contas/:id/creditar-remoto', transferenciasController.creditarRemoto);
 
 export default router;
