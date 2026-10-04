@@ -105,3 +105,17 @@ V1 aconteceu primeiro, porque todas as suas posições são menores ou iguais à
 **3. Dado V1 = [3, 1, 0] e V2 = [1, 3, 0]: qual evento aconteceu primeiro, ou eles são concorrentes? Justifique.**
 
 São concorrentes, porque V1 é maior na primeira posição, V2 é maior na segunda, e na terceira são iguais. Como nenhum vetor domina o outro em todas as posições, não há relação de causa e efeito entre eles.
+
+## Parte C
+
+**1. No passo 4 da tarefa, o que aconteceu exatamente quando a Agência 1 voltou? Se a mensagem "sumiu" (não foi aplicada), isso foi porque a mensageria falhou, ou por outro motivo? Explique com base no que você observou no log.**
+
+Eu derrubei a Agência 0 e enviei uma transferência com ela fora do ar. Quando ela voltou, o log mostrou CREDITO_REMOTO_FALHOU, com o motivo "conta nao encontrada". A mensagem não sumiu por causa da mensageria, ela foi entregue corretamente assim que a agência voltou ao ar, o que prova que o RabbitMQ reteve a mensagem na fila durante toda a queda. A falha foi devido as contas da agência serem guardadas em memória (new Map()), e esse mapa é recriado do zero toda vez que o processo reinicia, sem nenhum mecanismo que reconstrua as contas a partir do log de eventos. Então a mensagem chegou certa, mas não havia mais conta nenhuma para aplicar o crédito.
+
+**2. Compare esse comportamento com o do Sprint 1 (chamada REST direta): o que melhorou com a mensageria, e o que continua sendo um problema em aberto (dica: pense na diferença entre "a mensagem não se perde" e "o sistema está correto")?**
+
+O que melhorou em relação a Sprint 1 foi que lá, se a agência de destino estivesse fora do ar no instante exato da chamada HTTP, a chamada falhava na hora e a mensagem desaparecia de vez, sem nenhum registro do que deveria ter acontecido. Com o RabbitMQ isso não acontece mais, porque a mensagem fica na fila até alguém vir buscar, pois a entrega não depende mais do destino estar disponível no momento exato do envio. O que continua em aberto é que, apesar da mensagem ter chegado, o crédito não foi aplicado, e o valor debitado da origem ficou sem destino, a mesma inconsistência da Sprint 1. A diferença é que agora existe um registro em log do que aconteceu, mas não existe nenhum mecanismo que desfaça o débito na origem ou tente a entrega de novo. 
+
+**3. O consumidor de mensagens (assinar) processa créditos sem passar por nenhuma verificação de token JWT. Isso é um problema de segurança? Por que sim, ou por que não - pense em quem consegue publicar uma mensagem na exchange do RabbitMQ hoje, no seu ambiente de desenvolvimento.**
+
+Sim, é um problema de segurança, porque o consumidor da fila processa qualquer mensagem que chegue, sem checar quem a publicou. Isso significa que qualquer um com a URL AMQP da minha instância CloudAMQP conseguiria se conectar direto ao RabbitMQ e publicar uma mensagem com a routing key agencia.X.creditar, inventando valor e conta, sem nunca ter feito login em nenhuma agência.
