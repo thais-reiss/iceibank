@@ -3,6 +3,7 @@ package com.iceibank.agencia_java.controller;
 import com.iceibank.agencia_java.config.AgenciaConfig;
 import com.iceibank.agencia_java.config.AgenciaEstado;
 import com.iceibank.agencia_java.model.ContaModel;
+import com.iceibank.agencia_java.service.AlertaSaldoBaixo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,15 +18,26 @@ public class ContasController {
 
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
+    private final AlertaSaldoBaixo alertaSaldoBaixo;
 
-    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado) {
+    public ContasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, AlertaSaldoBaixo alertaSaldoBaixo) {
         this.agenciaConfig = agenciaConfig;
         this.estado = estado;
+        this.alertaSaldoBaixo = alertaSaldoBaixo;
     }
 
     private boolean naoEDono(int id, HttpServletRequest request) {
         Integer idAutenticado = (Integer) request.getAttribute("idContaAutenticada");
         return idAutenticado == null || idAutenticado != id;
+    }
+
+    private Map<String, Object> respostaConta(ContaModel conta, boolean saldoBaixo) {
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("id", conta.getId());
+        resposta.put("nomeAluno", conta.getNomeAluno());
+        resposta.put("saldo", conta.getSaldo());
+        resposta.put("saldoBaixo", saldoBaixo);
+        return resposta;
     }
 
     @PostMapping
@@ -85,7 +97,7 @@ public class ContasController {
         detalhes.put("novoSaldo", conta.getSaldo());
         estado.getRegistro().registrar("DEPOSITO", ts, detalhes);
 
-        return ResponseEntity.ok(conta);
+        return ResponseEntity.ok(respostaConta(conta, alertaSaldoBaixo.saldoEstaBaixo(conta)));
     }
 
     @PostMapping("/{id}/sacar")
@@ -106,7 +118,7 @@ public class ContasController {
             return ResponseEntity.status(400).body(Map.of("erro", "Saldo insuficiente."));
         }
 
-       int[] ts = estado.getRelogio().eventoLocal();
+        int[] ts = estado.getRelogio().eventoLocal();
         conta.setSaldo(conta.getSaldo() - valor);
 
         Map<String, Object> detalhes = new HashMap<>();
@@ -115,6 +127,8 @@ public class ContasController {
         detalhes.put("novoSaldo", conta.getSaldo());
         estado.getRegistro().registrar("SAQUE", ts, detalhes);
 
-        return ResponseEntity.ok(conta);
+        boolean saldoBaixo = alertaSaldoBaixo.verificar(conta);
+
+        return ResponseEntity.ok(respostaConta(conta, saldoBaixo));
     }
 }

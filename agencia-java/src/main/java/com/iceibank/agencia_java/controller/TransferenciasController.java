@@ -5,6 +5,7 @@ import com.iceibank.agencia_java.config.AgenciaEstado;
 import com.iceibank.agencia_java.config.MensageriaConfig;
 import com.iceibank.agencia_java.model.ContaModel;
 import com.iceibank.agencia_java.model.MensagemCredito;
+import com.iceibank.agencia_java.service.AlertaSaldoBaixo;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -25,11 +26,14 @@ public class TransferenciasController {
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
     private final RabbitTemplate rabbitTemplate;
+    private final AlertaSaldoBaixo alertaSaldoBaixo;
 
-    public TransferenciasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, RabbitTemplate rabbitTemplate) {
+    public TransferenciasController(AgenciaConfig agenciaConfig, AgenciaEstado estado,
+                                    RabbitTemplate rabbitTemplate, AlertaSaldoBaixo alertaSaldoBaixo) {
         this.agenciaConfig = agenciaConfig;
         this.estado = estado;
         this.rabbitTemplate = rabbitTemplate;
+        this.alertaSaldoBaixo = alertaSaldoBaixo;
     }
 
     private Map<String, Object> detalhesTransferencia(int idOrigem, int idDestino, double valor) {
@@ -88,7 +92,11 @@ public class TransferenciasController {
             estado.getRegistro().registrar("TRANSFERENCIA_CREDITO", vetorCredito,
                     detalhesTransferencia(idOrigem, idDestino, valor));
 
-            return ResponseEntity.ok(Map.of("mensagem", "Transferência concluída (mesma agência)."));
+            boolean saldoBaixo = alertaSaldoBaixo.verificar(contaOrigem);
+
+            return ResponseEntity.ok(Map.of(
+                    "mensagem", "Transferência concluída (mesma agência).",
+                    "saldoBaixo", saldoBaixo));
         }
 
         int[] vetorDebito = estado.getRelogio().eventoLocal();
@@ -115,7 +123,10 @@ public class TransferenciasController {
                                     + "Débito já aplicado - inconsistência conhecida (ver Sprint 4)."));
         }
 
+        boolean saldoBaixo = alertaSaldoBaixo.verificar(contaOrigem);
+
         return ResponseEntity.ok(Map.of(
-                "mensagem", "Transferência publicada para a agência de destino (entrega assíncrona)."));
+                "mensagem", "Transferência publicada para a agência de destino (entrega assíncrona).",
+                "saldoBaixo", saldoBaixo));
     }
 }

@@ -67,6 +67,12 @@ async function atualizarSaldo() {
     }
 }
 
+function alertarSeSaldoBaixo(resposta) {
+    if (resposta.saldoBaixo) {
+        alert('Atenção: seu saldo está baixo.');
+    }
+}
+
 document.getElementById('btnAtualizarSaldo').addEventListener('click', async function () {
     await atualizarSaldo();
 });
@@ -79,7 +85,7 @@ document.getElementById('formDeposito').addEventListener('submit', async functio
     );
 
     try {
-        await chamarApi(
+        const resposta = await chamarApi(
             `/contas/${idConta}/depositar`,
             'POST',
             {
@@ -92,6 +98,8 @@ document.getElementById('formDeposito').addEventListener('submit', async functio
         await atualizarSaldo();
 
         alert('Depósito concluído com sucesso.');
+
+        alertarSeSaldoBaixo(resposta);
 
     } catch (erro) {
         if (erro.message !== 'Sessão expirada.') {
@@ -108,7 +116,7 @@ document.getElementById('formSaque').addEventListener('submit', async function (
     );
 
     try {
-        await chamarApi(
+        const resposta = await chamarApi(
             `/contas/${idConta}/sacar`,
             'POST',
             {
@@ -121,6 +129,8 @@ document.getElementById('formSaque').addEventListener('submit', async function (
         await atualizarSaldo();
 
         alert('Saque concluído com sucesso.');
+
+        alertarSeSaldoBaixo(resposta);
 
     } catch (erro) {
         if (erro.message !== 'Sessão expirada.') {
@@ -141,7 +151,7 @@ document.getElementById('formTransferencia').addEventListener('submit', async fu
     );
 
     try {
-        await chamarApi(
+        const resposta = await chamarApi(
             '/transferencias',
             'POST',
             {
@@ -156,6 +166,8 @@ document.getElementById('formTransferencia').addEventListener('submit', async fu
         await atualizarSaldo();
 
         alert('Transferência concluída com sucesso.');
+
+        alertarSeSaldoBaixo(resposta);
 
     } catch (erro) {
         if (erro.message !== 'Sessão expirada.') {

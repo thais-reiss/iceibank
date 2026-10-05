@@ -137,3 +137,15 @@ No meu teste, um par classificado como concorrente foi a criação da conta na A
 **3. O algoritmo de comparação de vetores neste script é O(n²) no número de eventos (compara todos os pares). Isso seria um problema em um sistema real com milhões de eventos? O que se poderia fazer para tornar essa análise mais escalável?**
 
 Sim, seria um problema, pois O(n²) significa que, quando o número de eventos dobra, o número de comparações aumenta quatro vezes. Para tornar o sistema escalável, uma opção seria limitar as comparações a uma janela de tempo relevante, comparando cada evento apenas com eventos recentes. Assim, eventos muito antigos não precisariam ser comparados novamente, reduzindo bastante o número de comparações. Outra opção seria fazer o processamento de forma incremental, armazenando os resultados das comparações que já foram realizadas. Dessa forma, quando novos eventos chegassem, o sistema compararia apenas esses novos eventos com os eventos antigos necessários, sem precisar analisar todo o histórico novamente.
+
+## Funcionalidade Adicional
+
+**Notificação de saldo baixo.** Quando uma operação deixa o saldo de uma conta abaixo de R$ 50,00, o sistema avisa o cliente no painel e publica um alerta no RabbitMQ.
+
+**Como funciona:**
+
+1. As operações que reduzem o saldo (saque e transferência) verificam o saldo da conta depois de aplicadas. A regra e o limite de R$ 50,00 ficam em um único lugar, na classe `AlertaSaldoBaixo`.
+2. Se o saldo ficou abaixo do limite, a agência publica uma mensagem na exchange `iceibank.eventos` com a routing key `alertas.saldo-baixo`. A mensagem leva o id da conta, o saldo atual e o vetor do relógio vetorial (gerado com `aoEnviar`).
+3. Cada agência tem a sua própria fila de alertas (`fila-alertas-agencia-<id>`), ligada a essa mesma routing key. Por isso, uma única publicação é entregue às três agências (Publish/Subscribe, um para muitos). Preferi fazer dessa forma porque, se o alerta fosse somente para a agência dona da conta, ela estaria enviando a mensagem para si mesma e não haveria necessidade de usar o RabbitMQ, bastaria registrar em log. Uma limitação dessa escolha é que, no estado atual do sistema, as outras duas agências apenas registram o alerta no log. Porém, essa escolha permite acrescentar um novo assinante sem alterar o código de quem publica.
+4. O consumidor `ConsumidorAlertas` de cada agência executa o `aoReceber` do relógio vetorial e registra no log um evento `ALERTA_SALDO_BAIXO`. Após fechar o alerta, o saldo é atualizado na tela.
+5. As respostas de depósito, saque e transferência passaram a trazer o campo `saldoBaixo` (`true` ou `false`). O front lê esse campo e, quando é `true`, mostra um `alert` com a mensagem "Atenção: seu saldo está baixo." depois do alerta de sucesso da operação. O depósito apenas informa o campo, sem publicar alerta, porque só aumenta o saldo.
