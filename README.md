@@ -15,40 +15,45 @@ em arquivos JSONL, permitindo analisar a ordem e a causalidade das operações.
 
 Vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
 
-## Como rodar o sistema
+## Como rodar o sistema (Java)
 
-### Agências Java
+### Pré-requisitos
 
-Abra três terminais do PowerShell. Em cada terminal, navegue até a pasta
-`caminho\até\agencia-java` e execute os comandos correspondentes.
+- Java 21
+- Maven (ou o `mvnw` que já vem na pasta `agencia-java`)
+- Uma instância do RabbitMQ no CloudAMQP (plano gratuito Little Lemur) e a sua **AMQP URL**, no formato `amqps://usuario:senha@host.cloudamqp.com/vhost`
 
-**Terminal 1 - Agência 0 - porta: 4022**
+> A AMQP URL contém usuário e senha. Ela é lida de uma variável de ambiente.
+
+### 1. Subir as 3 agências
+
+Abra **3 terminais**, um por agência. Em cada um, rode os comandos abaixo, trocando apenas o `AGENCIA_ID` (`0`, `1` e `2`):
 
 ```powershell
-cd caminho\até\agencia-java
-$env:AGENCIA_ID=0
-$env:OFFSET=22
+cd agencia-java
+$env:RABBITMQ_URL = 'amqps://usuario:senha@host.cloudamqp.com/vhost'
+$env:AGENCIA_ID = '0'
 mvn spring-boot:run
 ```
 
-**Terminal 2 - Agência 1 - porta: 4023**
+No Git Bash, seria:
 
-```powershell
-cd caminho\até\agencia-java
-$env:AGENCIA_ID=1
-$env:OFFSET=22
+```bash
+cd agencia-java
+export RABBITMQ_URL='amqps://usuario:senha@host.cloudamqp.com/vhost'
+export AGENCIA_ID=0
 mvn spring-boot:run
 ```
 
-**Terminal 3 - Agência 2 - porta: 4024**
+As variáveis valem apenas para o terminal onde foram definidas. A porta de cada agência é `4000 + OFFSET + AGENCIA_ID`, com `OFFSET` igual a 22:
 
-```powershell
-cd caminho\até\agencia-java
-$env:AGENCIA_ID=2
-$env:OFFSET=22
-mvn spring-boot:run
-```
+| Agência | Porta |
+| ------- | ----- |
+| 0       | 4022  |
+| 1       | 4023  |
+| 2       | 4024  |
 
-Com isso, as instâncias do backend das agências estarão rodando e será 
-possível fazer requisições para o sistema.
+Na primeira subida, cada agência cria no RabbitMQ a exchange `iceibank.eventos` (topic) e as suas filas: `fila-agencia-<id>` (créditos entre agências) e `fila-alertas-agencia-<id>` (alertas de saldo baixo).
+
+
 
