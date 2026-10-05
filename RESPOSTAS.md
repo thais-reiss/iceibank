@@ -106,6 +106,8 @@ V1 aconteceu primeiro, porque todas as suas posições são menores ou iguais à
 
 São concorrentes, porque V1 é maior na primeira posição, V2 é maior na segunda, e na terceira são iguais. Como nenhum vetor domina o outro em todas as posições, não há relação de causa e efeito entre eles.
 
+---
+
 ## Parte C
 
 **1. No passo 4 da tarefa, o que aconteceu exatamente quando a Agência 1 voltou? Se a mensagem "sumiu" (não foi aplicada), isso foi porque a mensageria falhou, ou por outro motivo? Explique com base no que você observou no log.**
@@ -119,3 +121,19 @@ O que melhorou em relação a Sprint 1 foi que lá, se a agência de destino est
 **3. O consumidor de mensagens (assinar) processa créditos sem passar por nenhuma verificação de token JWT. Isso é um problema de segurança? Por que sim, ou por que não - pense em quem consegue publicar uma mensagem na exchange do RabbitMQ hoje, no seu ambiente de desenvolvimento.**
 
 Sim, é um problema de segurança, porque o consumidor da fila processa qualquer mensagem que chegue, sem checar quem a publicou. Isso significa que qualquer um com a URL AMQP da minha instância CloudAMQP conseguiria se conectar direto ao RabbitMQ e publicar uma mensagem com a routing key agencia.X.creditar, inventando valor e conta, sem nunca ter feito login em nenhuma agência.
+
+---
+
+## Parte D
+
+**1. No Sprint 1, o relógio de Lamport não permitia essa análise (dois timestamps diferentes não davam certeza sobre concorrência). O que exatamente, no relógio vetorial, torna possível essa comparação confiável?**
+
+O fato de que ele guarda um timestamp por processo, em vez de um único número. Isso possibilita comparar vetor por vetor, posição por posição. Se um vetor domina o outro em todas as posições, existe uma cadeia de causa e efeito entre os eventos, porque, pela regra do aoReceber, quem recebeu uma mensagem absorve o conhecimento que o remetente tinha sobre todas as agências até aquele momento. Se nenhum vetor domina o outro, isso prova que nenhum dos dois eventos sabia da existência do outro, indicando uma ausência de relação causal que o Lamport não conseguia garantir, porque com um número só, dois timestamps diferentes não garantiam relação de causa e efeito.
+
+**2. Encontre, no seu próprio teste, um par de eventos que o script classificou como concorrente. Faz sentido, olhando para o que cada evento representa? Explique por que eles realmente não têm relação de causa e efeito entre si.**
+
+No meu teste, um par classificado como concorrente foi a criação da conta na Agência 0 (vetor [1,0,0]) e a criação da conta na Agência 1 (vetor [0,1,0]). Isso faz sentido, porque comparando posição por posição, a Agência 0 tem valor maior na primeira posição (1 contra 0), e a Agência 1 tem valor maior na segunda (1 contra 0). Assim, nenhum vetor domina o outro em todas as posições, então, pela regra de comparação, são concorrentes. Isso reflete exatamente o que aconteceu na prática, pois as duas contas foram criadas de forma totalmente independente, sem nenhuma mensagem trocada entre as agências até aquele momento.
+
+**3. O algoritmo de comparação de vetores neste script é O(n²) no número de eventos (compara todos os pares). Isso seria um problema em um sistema real com milhões de eventos? O que se poderia fazer para tornar essa análise mais escalável?**
+
+Sim, seria um problema, pois O(n²) significa que, quando o número de eventos dobra, o número de comparações aumenta quatro vezes. Para tornar o sistema escalável, uma opção seria limitar as comparações a uma janela de tempo relevante, comparando cada evento apenas com eventos recentes. Assim, eventos muito antigos não precisariam ser comparados novamente, reduzindo bastante o número de comparações. Outra opção seria fazer o processamento de forma incremental, armazenando os resultados das comparações que já foram realizadas. Dessa forma, quando novos eventos chegassem, o sistema compararia apenas esses novos eventos com os eventos antigos necessários, sem precisar analisar todo o histórico novamente.
