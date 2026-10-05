@@ -40,7 +40,7 @@ public class ContasController {
             return ResponseEntity.status(409).body(Map.of("erro", "Conta já existe."));
         }
 
-        int ts = estado.getRelogio().eventoLocal();
+        int[] ts = estado.getRelogio().eventoLocal();
         estado.getContas().put(id, contaRecebida);
 
         Map<String, Object> detalhes = new HashMap<>();
@@ -76,7 +76,7 @@ public class ContasController {
 
         double valor = Double.parseDouble(corpo.get("valor").toString());
 
-        int ts = estado.getRelogio().eventoLocal();
+        int[] ts = estado.getRelogio().eventoLocal();
         conta.setSaldo(conta.getSaldo() + valor);
 
         Map<String, Object> detalhes = new HashMap<>();
@@ -106,7 +106,7 @@ public class ContasController {
             return ResponseEntity.status(400).body(Map.of("erro", "Saldo insuficiente."));
         }
 
-        int ts = estado.getRelogio().eventoLocal();
+       int[] ts = estado.getRelogio().eventoLocal();
         conta.setSaldo(conta.getSaldo() - valor);
 
         Map<String, Object> detalhes = new HashMap<>();

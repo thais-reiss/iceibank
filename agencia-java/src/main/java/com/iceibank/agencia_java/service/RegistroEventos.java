@@ -6,11 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class RegistroEventos {
-     private final String nomeAgencia;
+    private final String nomeAgencia;
     private final Path caminhoArquivo;
 
     public RegistroEventos(String nomeAgencia) throws IOException {
@@ -20,11 +21,11 @@ public class RegistroEventos {
         this.caminhoArquivo = pastaDados.resolve("eventos-" + nomeAgencia + ".jsonl");
     }
 
-    public Map<String, Object> registrar(String tipo, int timestampLamport, Map<String, Object> detalhes) throws IOException {
+    public synchronized Map<String, Object> registrar(String tipo, int[] timestampVetorial, Map<String, Object> detalhes) throws IOException {
         Map<String, Object> evento = new LinkedHashMap<>();
         evento.put("agencia", nomeAgencia);
         evento.put("tipo", tipo);
-        evento.put("timestampLamport", timestampLamport);
+        evento.put("timestampVetorial", timestampVetorial);
         evento.put("horaParede", Instant.now().toString());
         evento.put("detalhes", detalhes);
 
@@ -32,11 +33,10 @@ public class RegistroEventos {
         try (FileWriter writer = new FileWriter(caminhoArquivo.toFile(), true)) {
             writer.write(linha + System.lineSeparator());
         }
-        System.out.println("[Lamport " + timestampLamport + "] " + tipo + " " + detalhes);
+        System.out.println("[Vetor " + Arrays.toString(timestampVetorial) + "] " + tipo + " " + detalhes);
         return evento;
     }
 
-    // Serializador simples, só para os tipos usados neste projeto (String, Number, Map aninhado).
     @SuppressWarnings("unchecked")
     private String paraJson(Object valor) {
         if (valor == null) {
@@ -54,6 +54,9 @@ public class RegistroEventos {
             }
             sb.append("}");
             return sb.toString();
+        }
+        if (valor instanceof int[] vetor) {
+            return Arrays.toString(vetor).replace(" ", "");
         }
         if (valor instanceof Number) {
             return valor.toString();

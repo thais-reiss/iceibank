@@ -2,21 +2,18 @@ package com.iceibank.agencia_java.controller;
 
 import com.iceibank.agencia_java.config.AgenciaConfig;
 import com.iceibank.agencia_java.config.AgenciaEstado;
-import com.iceibank.agencia_java.config.AgenciaInfo;
+import com.iceibank.agencia_java.config.MensageriaConfig;
 import com.iceibank.agencia_java.model.ContaModel;
+import com.iceibank.agencia_java.model.MensagemCredito;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,16 +24,20 @@ public class TransferenciasController {
 
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
-    private final RestTemplate restTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
-    @Value("${agencia.token-interno}")
-    private String tokenInterno;
-
-    public TransferenciasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, RestTemplate restTemplate) {
-
+    public TransferenciasController(AgenciaConfig agenciaConfig, AgenciaEstado estado, RabbitTemplate rabbitTemplate) {
         this.agenciaConfig = agenciaConfig;
         this.estado = estado;
-        this.restTemplate = restTemplate;
+        this.rabbitTemplate = rabbitTemplate;
+    }
+
+    private Map<String, Object> detalhesTransferencia(int idOrigem, int idDestino, double valor) {
+        Map<String, Object> detalhes = new HashMap<>();
+        detalhes.put("idOrigem", idOrigem);
+        detalhes.put("idDestino", idDestino);
+        detalhes.put("valor", valor);
+        return detalhes;
     }
 
     @PostMapping("/transferencias")
@@ -55,7 +56,7 @@ public class TransferenciasController {
 
         if (valor <= 0) {
             return ResponseEntity.status(400)
-                    .body(Map.of("erro","O valor da transferência deve ser maior que zero."));
+                    .body(Map.of("erro", "O valor da transferência deve ser maior que zero."));
         }
 
         ContaModel contaOrigem = estado.getContas().get(idOrigem);
@@ -65,8 +66,9 @@ public class TransferenciasController {
         }
 
         if (contaOrigem.getSaldo() < valor) {
-            return ResponseEntity.status(400).body(Map.of("erro","Saldo insuficiente."));
+            return ResponseEntity.status(400).body(Map.of("erro", "Saldo insuficiente."));
         }
+
         int agenciaDestino = agenciaConfig.agenciaResponsavel(idDestino);
 
         if (agenciaDestino == agenciaConfig.getIdAgencia()) {
@@ -76,140 +78,44 @@ public class TransferenciasController {
                 return ResponseEntity.status(404).body(Map.of("erro", "Conta de destino não encontrada."));
             }
 
-            int tsDebito = estado.getRelogio().eventoLocal();
+            int[] vetorDebito = estado.getRelogio().eventoLocal();
             contaOrigem.setSaldo(contaOrigem.getSaldo() - valor);
+            estado.getRegistro().registrar("TRANSFERENCIA_DEBITO", vetorDebito,
+                    detalhesTransferencia(idOrigem, idDestino, valor));
 
-            Map<String, Object> detalhesDebito = new HashMap<>();
-            detalhesDebito.put("idOrigem", idOrigem);
-            detalhesDebito.put("idDestino", idDestino);
-            detalhesDebito.put("valor", valor);
-
-            estado.getRegistro().registrar("TRANSFERENCIA_DEBITO", tsDebito, detalhesDebito);
-
-            int tsCredito = estado.getRelogio().eventoLocal();
+            int[] vetorCredito = estado.getRelogio().eventoLocal();
             contaDestino.setSaldo(contaDestino.getSaldo() + valor);
+            estado.getRegistro().registrar("TRANSFERENCIA_CREDITO", vetorCredito,
+                    detalhesTransferencia(idOrigem, idDestino, valor));
 
-            Map<String, Object> detalhesCredito = new HashMap<>();
-            detalhesCredito.put("idOrigem", idOrigem);
-            detalhesCredito.put("idDestino", idDestino);
-            detalhesCredito.put("valor", valor);
-
-            estado.getRegistro().registrar("TRANSFERENCIA_CREDITO", tsCredito, detalhesCredito);
-
-            return ResponseEntity.ok(
-                    Map.of(
-                            "mensagem",
-                            "Transferência concluída (mesma agência)."
-                    )
-            );
+            return ResponseEntity.ok(Map.of("mensagem", "Transferência concluída (mesma agência)."));
         }
 
-        AgenciaInfo destino = agenciaConfig.buscarAgencia(agenciaDestino);
-
-        int tsEnvio = estado.getRelogio().aoEnviar();
-
-        Map<String, Object> corpoRemoto = new HashMap<>();
-        corpoRemoto.put("valor", valor);
-        corpoRemoto.put("timestampLamport", tsEnvio);
-        corpoRemoto.put("origemAgencia", agenciaConfig.getIdAgencia());
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("X-Internal-Token", tokenInterno);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Map<String, Object>> requisicao =
-                new HttpEntity<>(corpoRemoto, headers);
-
-        int tsDebito = estado.getRelogio().eventoLocal();
-
+        int[] vetorDebito = estado.getRelogio().eventoLocal();
         contaOrigem.setSaldo(contaOrigem.getSaldo() - valor);
+        estado.getRegistro().registrar("TRANSFERENCIA_DEBITO", vetorDebito,
+                detalhesTransferencia(idOrigem, idDestino, valor));
 
-        Map<String, Object> detalhesDebito = new HashMap<>();
-        detalhesDebito.put("idOrigem", idOrigem);
-        detalhesDebito.put("idDestino", idDestino);
-        detalhesDebito.put("valor", valor);
-
-        estado.getRegistro().registrar(
-                "TRANSFERENCIA_DEBITO",
-                tsDebito,
-                detalhesDebito
-        );
+        int[] vetorEnvio = estado.getRelogio().aoEnviar();
+        MensagemCredito mensagem = new MensagemCredito(idDestino, valor, vetorEnvio, agenciaConfig.getIdAgencia());
 
         try {
-
-            restTemplate.exchange(destino.getUrl() + "/contas/" + idDestino + "/creditar-remoto",
-                    HttpMethod.POST,
-                    requisicao,
-                    Map.class
-            );
-
-            return ResponseEntity.ok(
-                    Map.of("mensagem","Transferência concluída (entre agências).")
-            );
-
-        } catch (HttpClientErrorException.NotFound erro) {
-            contaOrigem.setSaldo(contaOrigem.getSaldo() + valor);
-
-            return ResponseEntity.status(404)
-                    .body(Map.of("erro","Conta de destino não encontrada."));
-
-        } catch (RestClientException erro) {
-
-            Map<String, Object> detalhesFalha = new HashMap<>();
-            detalhesFalha.put("idOrigem", idOrigem);
-            detalhesFalha.put("idDestino", idDestino);
-            detalhesFalha.put("valor", valor);
+            rabbitTemplate.convertAndSend(
+                    MensageriaConfig.EXCHANGE,
+                    MensageriaConfig.routingKeyCreditar(agenciaDestino),
+                    mensagem);
+        } catch (AmqpException erro) {
+            Map<String, Object> detalhesFalha = detalhesTransferencia(idOrigem, idDestino, valor);
             detalhesFalha.put("erro", erro.getMessage());
-
-            estado.getRegistro().registrar( "TRANSFERENCIA_FALHOU", estado.getRelogio().eventoLocal(), detalhesFalha);
+            estado.getRegistro().registrar("TRANSFERENCIA_FALHOU", estado.getRelogio().eventoLocal(), detalhesFalha);
 
             return ResponseEntity.status(502)
-                    .body(Map.of(
-                            "erro",
-                            "Falha ao contatar agência de destino. " +
-                            "Débito já aplicado - inconsistência conhecida " +
-                            "(ver Sprint 4)."
-                    ));
-        }
-    }
-
-    @PostMapping("/contas/{id}/creditar-remoto")
-    public ResponseEntity<?> creditarRemoto(
-            @PathVariable int id,
-            @RequestBody Map<String, Object> corpo) throws IOException {
-
-        double valor = Double.parseDouble(corpo.get("valor").toString());
-
-        int timestampLamport =
-                Integer.parseInt(corpo.get("timestampLamport").toString());
-
-        int origemAgencia =
-                Integer.parseInt(corpo.get("origemAgencia").toString());
-
-        int ts = estado.getRelogio().aoReceber(timestampLamport);
-
-        ContaModel conta = estado.getContas().get(id);
-
-        if (conta == null) {
-            return ResponseEntity.status(404)
-                    .body(Map.of("erro","Conta não encontrada nesta agência."));
+                    .body(Map.of("erro",
+                            "Falha ao publicar a mensagem no RabbitMQ. "
+                                    + "Débito já aplicado - inconsistência conhecida (ver Sprint 4)."));
         }
 
-        if (valor <= 0) {
-            return ResponseEntity.status(400)
-                    .body(Map.of("erro","O valor do crédito deve ser maior que zero."));
-        }
-
-        conta.setSaldo(conta.getSaldo() + valor);
-
-        Map<String, Object> detalhes = new HashMap<>();
-        detalhes.put("idConta", id);
-        detalhes.put("valor", valor);
-        detalhes.put("origemAgencia", origemAgencia);
-
-        estado.getRegistro().registrar("TRANSFERENCIA_CREDITO_REMOTO", ts, detalhes
-        );
-
-        return ResponseEntity.ok(Map.of("mensagem","Crédito remoto aplicado.", "saldoAtual",conta.getSaldo()));
+        return ResponseEntity.ok(Map.of(
+                "mensagem", "Transferência publicada para a agência de destino (entrega assíncrona)."));
     }
 }

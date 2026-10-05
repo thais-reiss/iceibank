@@ -4,7 +4,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -16,21 +15,18 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
-    @Value("${agencia.token-interno}")
-    private String tokenInterno;
-
     public JwtFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
     @Override
-   protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
-        throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+            throws ServletException, IOException {
 
-    if (request.getMethod().equals("OPTIONS")) {
-        filterChain.doFilter(request, response);
-        return;
-    }
+        if (request.getMethod().equals("OPTIONS")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String caminho = request.getRequestURI();
         String metodo = request.getMethod();
@@ -39,20 +35,6 @@ public class JwtFilter extends OncePerRequestFilter {
                 || caminho.equals("/auth/login");
 
         if (rotaPublica) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        boolean rotaEntreAgencias = caminho.matches("/contas/\\d+/creditar-remoto") && metodo.equals("POST");
-
-        if (rotaEntreAgencias) {
-            String tokenRecebido = request.getHeader("X-Internal-Token");
-            if (tokenRecebido == null || !tokenRecebido.equals(tokenInterno)) {
-                response.setStatus(401);
-                response.setContentType("application/json");
-                response.getWriter().write("{\"erro\":\"Token interno inválido ou ausente.\"}");
-                return;
-            }
             filterChain.doFilter(request, response);
             return;
         }
