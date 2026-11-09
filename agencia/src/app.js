@@ -4,6 +4,7 @@ import RelogioVetorial from "./services/vectorClock.js";
 import RegistroEventos from "./services/eventLog.js";
 import { assinar } from "./services/mensageria.js";
 import routes from "./routes.js";
+import criarServicoBully from './services/bullyService.js';
 
 const idAgencia = parseInt(process.env.AGENCIA_ID || "0", 10);
 const agenciaConfig = config.AGENCIAS.find((a) => a.id === idAgencia);
@@ -19,7 +20,9 @@ app.use(express.json());
 const relogio = new RelogioVetorial(idAgencia, config.NUMERO_AGENCIAS);
 const registro = new RegistroEventos(`agencia-${idAgencia}`);
 const contas = new Map();
+const bully = criarServicoBully(idAgencia, relogio, registro);
 
+app.locals.bully = bully;
 app.locals.idAgencia = idAgencia;
 app.locals.relogio = relogio;
 app.locals.registro = registro;
@@ -54,4 +57,5 @@ assinar(idAgencia, (mensagem) => {
 const porta = new URL(agenciaConfig.url).port;
 app.listen(porta, () => {
   console.log(`[Agência ${idAgencia}] ouvindo na porta ${porta}`);
+  bully.iniciarEleicao();
 });
