@@ -149,3 +149,19 @@ Sim, seria um problema, pois O(n²) significa que, quando o número de eventos d
 3. Cada agência tem a sua própria fila de alertas (`fila-alertas-agencia-<id>`), ligada a essa mesma routing key. Por isso, uma única publicação é entregue às três agências (Publish/Subscribe, um para muitos). Preferi fazer dessa forma porque, se o alerta fosse somente para a agência dona da conta, ela estaria enviando a mensagem para si mesma e não haveria necessidade de usar o RabbitMQ, bastaria registrar em log. Uma limitação dessa escolha é que, no estado atual do sistema, as outras duas agências apenas registram o alerta no log. Porém, essa escolha permite acrescentar um novo assinante sem alterar o código de quem publica.
 4. O consumidor `ConsumidorAlertas` de cada agência executa o `aoReceber` do relógio vetorial e registra no log um evento `ALERTA_SALDO_BAIXO`. Após fechar o alerta, o saldo é atualizado na tela.
 5. As respostas de depósito, saque e transferência passaram a trazer o campo `saldoBaixo` (`true` ou `false`). O front lê esse campo e, quando é `true`, mostra um `alert` com a mensagem "Atenção: seu saldo está baixo." depois do alerta de sucesso da operação. O depósito apenas informa o campo, sem publicar alerta, porque só aumenta o saldo.
+
+# Respostas Sprint 3
+
+## Parte A
+
+**1. Por que o algoritmo de Bully sempre elege o processo de maior ID, e não o de menor? O resultado seria diferente (mas ainda assim correto) se a regra fosse invertida?**
+
+Ele elege o processo de maior ID por convenção, pois o que importa para o algoritmo funcionar é que todas as agências usem o mesmo critério e que esse critério nunca gere empate, o que é garantido porque cada agência tem um ID único (0, 1 e 2). Se a regra fosse invertida, a eleição continuaria correta, pois cada agência mandaria mensagens de eleição para as de ID menor, e a líder seria a agência 0, que é a de menor ID entre as ativas. O resultado seria diferente, mas igualmente válido, já que todas as agências chegariam ao mesmo consenso. 
+
+**2. No passo 4 da tarefa, você deve ter visto mais de uma agência declarar TORNOU_LIDER durante a subida, antes de convergir. Isso é um bug, ou um comportamento esperado do algoritmo? Justifique com base no que você observou nos logs.**
+
+Não é um bug, é um comportamento esperado. No meu teste, as agências não subiram exatamente ao mesmo tempo. Eu subi a agência 0 primeiro e, como as agências 1 e 2 ainda estavam fora do ar, ninguém respondeu à sua eleição e ela se declarou líder (TORNOU_LIDER). Em seguida, eu subi a agência 1, que não obteve resposta da agência 2 e, assim, se declarou líder, avisando a agência 0, que registrou LIDER_ANUNCIADO com liderId: 1. Por fim, eu subi a agência 2 e, como não existe agência com ID maior, ela se declarou líder e anunciou isso às outras duas, que passaram a registrar liderId: 2. Cada TORNOU_LIDER foi uma decisão correta com a informação que a agência tinha naquele momento. Assim, o algoritmo de Bully não garante que a primeira decisão seja definitiva, e sim que o sistema converge para a agência de maior ID entre as ativas, e foi isso que aconteceu: no fim, as três responderam liderAtual: 2.
+
+**3.O endpoint /bully/eleicao não tem nenhuma autenticação. Qualquer processo que descubra a URL de uma agência pode disparar uma eleição nela. Isso é um problema de segurança real para este projeto? Por quê, ou por que não?**
+
+No estado atual do projeto, o risco é baixo, porque as agências rodam apenas no meu computador e a líder ainda é só informativa, sem nenhuma operação bancária dependendo dela. No máximo, alguém conseguiria forçar novas eleições repetidamente, poluindo os logs e sobrecarregando as agências, mas a agência 2 continuaria vencendo. O problema é real, porém, porque o /bully/coordenador também não tem autenticação, o que permitiria anunciar uma líder falsa. Isso se tornará grave na Sprint 4, quando a líder passar a coordenar as transações distribuídas. 
