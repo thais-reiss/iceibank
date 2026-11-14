@@ -32,7 +32,8 @@ public class JwtFilter extends OncePerRequestFilter {
         String metodo = request.getMethod();
 
         boolean rotaPublica = (caminho.equals("/contas") && metodo.equals("POST"))
-                || caminho.equals("/auth/login");
+                || caminho.equals("/auth/login")
+                || caminho.startsWith("/bully/");
 
         if (rotaPublica) {
             filterChain.doFilter(request, response);
