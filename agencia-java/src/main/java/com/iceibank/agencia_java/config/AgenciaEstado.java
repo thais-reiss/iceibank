@@ -2,7 +2,7 @@ package com.iceibank.agencia_java.config;
 
 import com.iceibank.agencia_java.model.ContaModel;
 import com.iceibank.agencia_java.service.RegistroEventos;
-import com.iceibank.agencia_java.service.RelogioLamport;
+// import com.iceibank.agencia_java.service.RelogioLamport;
 import com.iceibank.agencia_java.service.RelogioVetorial;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;

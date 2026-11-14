@@ -1,6 +1,6 @@
 package com.iceibank.agencia_java.service;
 
-import java.util.Arrays;
+// import java.util.Arrays;
 
 public class RelogioVetorial {
     private final int idAgencia;
