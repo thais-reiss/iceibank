@@ -165,3 +165,17 @@ Não é um bug, é um comportamento esperado. No meu teste, as agências não su
 **3.O endpoint /bully/eleicao não tem nenhuma autenticação. Qualquer processo que descubra a URL de uma agência pode disparar uma eleição nela. Isso é um problema de segurança real para este projeto? Por quê, ou por que não?**
 
 No estado atual do projeto, o risco é baixo, porque as agências rodam apenas no meu computador e a líder ainda é só informativa, sem nenhuma operação bancária dependendo dela. No máximo, alguém conseguiria forçar novas eleições repetidamente, poluindo os logs e sobrecarregando as agências, mas a agência 2 continuaria vencendo. O problema é real, porém, porque o /bully/coordenador também não tem autenticação, o que permitiria anunciar uma líder falsa. Isso se tornará grave na Sprint 4, quando a líder passar a coordenar as transações distribuídas. 
+
+## Parte B
+
+**1. O que aconteceria se o intervalo do heartbeat (intervaloMs) fosse muito curto (ex.: 100ms)? E se fosse muito longo (ex.: 60 segundos)? Pense no trade-off entre detectar falhas rápido e sobrecarregar a rede com verificações.**
+
+Se o intervalo fosse muito curto, como 100ms, a queda da agência líder seria detectada quase imediatamente, mas cada agência que não é a líder faria 10 requisições por segundo, e a líder receberia 20 requisições por segundo, o que aumentaria muito o tráfego na rede e a carga sobre ela. Já com um intervalo muito longo, como 60 segundos, o tráfego seria menor, mas o sistema poderia ficar até um minuto sem perceber que a líder caiu, com as agências acreditando em uma líder que não existe mais. Assim, intervalo ideal é um equilíbrio entre detectar falhas rapidamente e não sobrecarregar a rede.
+
+**2. No passo 6 da tarefa, a agência que você derrubou e subiu de novo pode, dependendo do ID dela, "tomar" a liderança de volta mesmo que a eleição atual estivesse funcionando bem. Isso é desejável? Que problema prático isso pode causar em um sistema real (pense em uma troca de liderança acontecendo bem no meio de uma operação importante)?**
+
+Se a liderança estivesse funcionando bem isso não seria desejável, pois geraria uma nova rodada de eleições e uma troca de mensagens desnecessária. Além disso, trocar de líder no meio de uma operação importante pode prejudicá-la, pois a nova líder não saberia em que etapa a transação estava e as demais agências poderiam ficar esperando uma confirmação da líder antiga que nunca chegaria, deixando a transação travada ou inconsistente. Também tem o caso da agência de maior ID ter alguma instabilidade e ficar caindo e voltando várias vezes, isso faria a liderança ficar trocando o tempo todo, deixando o sistema instável. 
+
+**3. O TIMEOUT_MS de 1 segundo é usado tanto para detectar uma agência fora do ar quanto para decidir se alguém respondeu a uma eleição. O que aconteceria se a rede estivesse genuinamente lenta (não a agência fora do ar, só uma resposta demorada) e isso ultrapassasse 1 segundo?**
+
+Se uma mensagem demora a chegar em uma das agências, elas não tem como saber se a outra agência falhou ou se foi uma lentidão da rede. Assim, se a resposta da líder demorasse mais de 1 segundo, as outras agências iriam concluir que ela caiu e iniciariam uma nova eleição, mesmo se a líder estivesse ativa. Por esse mesmo motivo, se a resposta a uma eleição de uma agência de maior ID demorasse, a agência de menor ID iria se declarar líder enquanto a líder verdadeira continuasse funcionando. Assim, o sistema poderia ter 2 agências se considerando líderes ao mesmo tempo. 
