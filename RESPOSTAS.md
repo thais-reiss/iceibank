@@ -179,3 +179,9 @@ Se a liderança estivesse funcionando bem isso não seria desejável, pois gerar
 **3. O TIMEOUT_MS de 1 segundo é usado tanto para detectar uma agência fora do ar quanto para decidir se alguém respondeu a uma eleição. O que aconteceria se a rede estivesse genuinamente lenta (não a agência fora do ar, só uma resposta demorada) e isso ultrapassasse 1 segundo?**
 
 Se uma mensagem demora a chegar em uma das agências, elas não tem como saber se a outra agência falhou ou se foi uma lentidão da rede. Assim, se a resposta da líder demorasse mais de 1 segundo, as outras agências iriam concluir que ela caiu e iniciariam uma nova eleição, mesmo se a líder estivesse ativa. Por esse mesmo motivo, se a resposta a uma eleição de uma agência de maior ID demorasse, a agência de menor ID iria se declarar líder enquanto a líder verdadeira continuasse funcionando. Assim, o sistema poderia ter 2 agências se considerando líderes ao mesmo tempo. 
+
+## Parte C
+
+**1. Observando a saída do script, quantas vezes a liderança mudou de mãos durante a "tempestade" de eleições da subida inicial (Parte A), antes de estabilizar? Isso tem algum custo real para o sistema (rede, tempo), mesmo não afetando o resultado final?**
+
+Na subida inicial a liderança mudou de mãos duas vezes. Primeiro a agência 0 se declarou a líder, depois que subi a agência 1 ela se declarou a líder e, por fim, quando subi a agência 2 ela se declarou a líder. Assim, a liderança foi da 0 para 1 e depois da 1 para a 2, totalizando duas trocas de liderança. Sim, isso tem custo para o sistema, pois na rede cada agência que se declarou líder enviou mensagens de coordenador às outras, e essas mensagens logo se tornaram inúteis. No tempo, cada tentativa de contato com uma agência fora do ar pode esperar até o timeout de 1 segundo, e, enquanto a liderança não estabiliza, as agências podem discordar sobre quem é a líder, causando lentidão e inconsistências no sistema.
