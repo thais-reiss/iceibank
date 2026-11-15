@@ -1,4 +1,5 @@
 import * as config from '../config.js';
+import compararVetores from '../services/compararVetores.js';
 
 function criarConta(req, res) {
   const { id, nomeAluno, saldoInicial } = req.body;
@@ -19,11 +20,11 @@ function criarConta(req, res) {
 }
 
 function consultarSaldo(req, res) {
-  const { contas } = req.app.locals;
+  const { contas, relogio } = req.app.locals;
   const id = parseInt(req.params.id, 10);
   const conta = contas.get(id);
   if (!conta) return res.status(404).json({ erro: 'Conta não encontrada nesta agência.' });
-  res.json(conta);
+  res.json({ ...conta, vetorAtual: relogio.obterVetorAtual() });
 }
 
 function depositar(req, res) {
@@ -55,4 +56,40 @@ function sacar(req, res) {
   res.json(conta);
 }
 
-export { criarConta, consultarSaldo, depositar, sacar };
+function sincronizarOperacaoPendente(req, res) {
+  const { contas, relogio, registro } = req.app.locals;
+  const id = parseInt(req.params.id, 10);
+  const { tipo, valor, vetorConhecido } = req.body;
+
+  const conta = contas.get(id);
+  if (!conta) return res.status(404).json({ erro: 'Conta não encontrada nesta agência.' });
+
+  const vetorAtual = relogio.obterVetorAtual();
+  const relacao = compararVetores(vetorConhecido, vetorAtual);
+
+  if (relacao !== 'IGUAIS') {
+    return res.status(409).json({
+      erro: 'Conflito detectado: o estado da conta mudou desde a última sincronização do app.',
+      vetorConhecido,
+      vetorAtual,
+      contaAtual: conta,
+    });
+  }
+
+  let vetor;
+  if (tipo === 'DEPOSITO') {
+    vetor = relogio.eventoLocal();
+    conta.saldo += valor;
+  } else if (tipo === 'SAQUE') {
+    if (conta.saldo < valor) return res.status(400).json({ erro: 'Saldo insuficiente.' });
+    vetor = relogio.eventoLocal();
+    conta.saldo -= valor;
+  } else {
+    return res.status(400).json({ erro: 'Tipo de operação pendente não suportado.' });
+  }
+
+  registro.registrar('SINCRONIZACAO_OFFLINE', vetor, { id, tipo, valor });
+  res.json(conta);
+}
+
+export { criarConta, consultarSaldo, depositar, sacar, sincronizarOperacaoPendente };

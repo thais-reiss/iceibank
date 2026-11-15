@@ -8,6 +8,7 @@ router.post('/contas', contasController.criarConta);
 router.get('/contas/:id', contasController.consultarSaldo);
 router.post('/contas/:id/depositar', contasController.depositar);
 router.post('/contas/:id/sacar', contasController.sacar);
+router.post('/contas/:id/sincronizar', contasController.sincronizarOperacaoPendente);
 
 router.post('/transferencias', transferenciasController.transferir);
 
