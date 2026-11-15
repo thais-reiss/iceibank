@@ -1,17 +1,30 @@
-# app_mobile
+# ICEIBank - app mobile
 
-A new Flutter project.
+App Flutter do ICEIBank. Ele consome a mesma API REST das agências que o frontend web usa.
 
-## Getting Started
+As instruções para rodar o app estão no [README principal](../README.md), na seção "Como rodar o app mobile (Flutter)".
 
-This project is a starting point for a Flutter application.
+## O que o app faz
 
-A few resources to get you started if this is your first Flutter project:
+- Login com JWT, consulta de saldo, depósito, saque e transferência.
+- Painel de liderança: mostra a agência líder atual, consultando `GET /bully/lider` a cada 3 segundos, e se atualiza sozinho quando há uma nova eleição.
+- Histórico de líderes: lista as trocas de liderança observadas pelo app.
+- Modo offline-first: guarda o último saldo conhecido, enfileira operações feitas sem conexão e as sincroniza automaticamente ao reconectar.
+- Tratamento de conflito: se a conta mudou enquanto o app estava offline, a operação não é aplicada sozinha. O app mostra o saldo real e deixa a pessoa escolher entre tentar novamente ou descartar.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Organização do código
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| Pasta em `lib/` | Conteúdo |
+| --------------- | -------- |
+| `config/`       | Endereços das agências |
+| `services/`     | Comunicação com as agências, liderança, banco local e sincronização |
+| `modelos/`      | Dados guardados no celular: conta em cache e operação pendente |
+| `telas/`        | Login, painel principal e tela de liderança |
+| `componentes/`  | Cartões e peças reaproveitadas nas telas |
+| `tema/`         | Cores e estilos |
+
+## Bibliotecas
+
+- `http`: requisições para as agências.
+- `sqflite`: banco de dados local, com o saldo em cache e a fila de operações pendentes.
+- `connectivity_plus`: detecta quando a conexão volta, para sincronizar a fila.
