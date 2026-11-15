@@ -26,6 +26,13 @@ class SessaoExpirada extends ErroApi {
       : super('Sua sessão expirou. Faça login novamente.', status: 401);
 }
 
+class LeituraConta {
+  final double saldo;
+  final List<int> vetorAtual;
+
+  LeituraConta({required this.saldo, required this.vetorAtual});
+}
+
 class Api {
   static const Duration tempoLimite = Duration(seconds: 5);
 
@@ -49,9 +56,28 @@ class Api {
     idConta = null;
   }
 
-  Future<double> consultarSaldo() async {
+  Future<LeituraConta> consultarConta() async {
     final conta = await _chamar('GET', '/contas/$idConta');
-    return (conta['saldo'] as num).toDouble();
+    return LeituraConta(
+      saldo: (conta['saldo'] as num).toDouble(),
+      vetorAtual: (conta['vetorAtual'] as List)
+          .map((numero) => (numero as num).toInt())
+          .toList(),
+    );
+  }
+
+  Future<Map<String, dynamic>> sincronizar({
+    required String tipo,
+    required double valor,
+    required List<int> vetorConhecido,
+    int? idDestino,
+  }) {
+    return _chamar('POST', '/contas/$idConta/sincronizar', {
+      'tipo': tipo,
+      'valor': valor,
+      'vetorConhecido': vetorConhecido,
+      'idDestino': ?idDestino,
+    });
   }
 
   Future<Map<String, dynamic>> depositar(double valor) {

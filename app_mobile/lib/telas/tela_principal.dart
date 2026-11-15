@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../componentes/cartao_operacao.dart';
+import '../componentes/cartao_pendentes.dart';
 import '../componentes/componentes.dart';
 import '../componentes/painel_lideranca.dart';
+import '../modelos/operacao_pendente.dart';
 import '../services/api.dart';
+import '../services/conta_offline.dart';
 import '../tema/tema.dart';
 import 'tela_login.dart';
 
@@ -15,51 +20,81 @@ class TelaPrincipal extends StatefulWidget {
 }
 
 class _TelaPrincipalState extends State<TelaPrincipal> {
-  double? _saldo;
-  String? _erroSaldo;
+  StreamSubscription<AvisoConta>? _assinaturaAvisos;
 
   @override
   void initState() {
     super.initState();
-    _atualizarSaldo();
+    _assinaturaAvisos = servicoConta.avisos.listen(_mostrarAviso);
+    servicoConta.iniciar();
+    servicoConta.carregar(api.idConta!);
+  }
+
+  @override
+  void dispose() {
+    _assinaturaAvisos?.cancel();
+    servicoConta.parar();
+    super.dispose();
   }
 
   Future<void> _atualizarSaldo() async {
-    try {
-      final saldo = await api.consultarSaldo();
-      if (!mounted) return;
-      setState(() {
-        _saldo = saldo;
-        _erroSaldo = null;
-      });
-    } on SessaoExpirada catch (erro) {
-      _voltarParaLogin(aviso: erro.mensagem);
-    } on ErroApi catch (erro) {
-      if (!mounted) return;
-      setState(() => _erroSaldo = erro.mensagem);
-    }
+    await servicoConta.atualizar();
+    await servicoConta.sincronizar();
   }
 
   Future<void> _executar(
+    String tipo,
     String mensagemSucesso,
-    Future<Map<String, dynamic>> Function() operacao,
+    double valor,
+    int? idDestino,
   ) async {
     try {
-      final resposta = await operacao();
-      await _atualizarSaldo();
+      final resultado = await servicoConta.executar(tipo, valor, idDestino);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(mensagemSucesso)));
+      _mostrarFaixa(
+        resultado.enfileirada
+            ? 'Sem conexão: a operação foi guardada e será sincronizada '
+                'automaticamente.'
+            : mensagemSucesso,
+      );
 
-      if (resposta['saldoBaixo'] == true) {
+      if (resultado.saldoBaixo) {
         _avisarSaldoBaixo();
       }
     } on SessaoExpirada catch (erro) {
       _voltarParaLogin(aviso: erro.mensagem);
       rethrow;
     }
+  }
+
+  void _mostrarAviso(AvisoConta aviso) {
+    if (!mounted) return;
+
+    switch (aviso.tipo) {
+      case TipoAviso.sincronizada:
+        _mostrarFaixa(
+          'Sincronizado com a agência: ${descreverOperacao(aviso.operacao!)}.',
+        );
+      case TipoAviso.recusada:
+        _mostrarFaixa(
+          '${descreverOperacao(aviso.operacao!)} foi recusado pela agência: '
+          '${aviso.mensagem}',
+        );
+      case TipoAviso.saldoBaixo:
+        _avisarSaldoBaixo();
+      case TipoAviso.conflito:
+        _avisarConflito();
+      case TipoAviso.sessaoExpirada:
+        api.sair();
+        _voltarParaLogin(aviso: aviso.mensagem);
+    }
+  }
+
+  void _mostrarFaixa(String texto) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(texto)));
   }
 
   void _avisarSaldoBaixo() {
@@ -78,6 +113,31 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
+  void _avisarConflito() {
+    final saldoReal = servicoConta.saldoConfirmado;
+
+    showDialog<void>(
+      context: context,
+      builder: (contexto) => AlertDialog(
+        title: const Text('Operação não sincronizada'),
+        content: Text(
+          'A conta foi alterada enquanto o app estava sem conexão, por isso '
+          'as operações pendentes não foram aplicadas automaticamente.\n\n'
+          'Saldo real da conta: '
+          '${saldoReal == null ? '--' : formatarReais(saldoReal)}\n\n'
+          'No cartão "Operações pendentes", escolha entre tentar novamente '
+          'ou descartar cada operação.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(contexto).pop(),
+            child: const Text('Entendi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _sair() {
     api.sair();
     _voltarParaLogin();
@@ -85,6 +145,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
   void _voltarParaLogin({String? aviso}) {
     if (!mounted) return;
+    servicoConta.limpar();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => TelaLogin(aviso: aviso)),
     );
@@ -103,18 +164,32 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
               const SizedBox(height: 24),
               const PainelLideranca(),
               const SizedBox(height: 24),
-              if (_erroSaldo != null) ...[
-                MensagemErro(_erroSaldo!),
-                const SizedBox(height: 20),
-              ],
-              _cartaoSaldo(),
+              ListenableBuilder(
+                listenable: servicoConta,
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (servicoConta.erroLeitura != null) ...[
+                      MensagemErro(servicoConta.erroLeitura!),
+                      const SizedBox(height: 20),
+                    ],
+                    _cartaoSaldo(),
+                    if (servicoConta.operacoes.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const CartaoPendentes(),
+                    ],
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
               CartaoOperacao(
                 numero: '01',
                 titulo: 'Depositar',
                 executar: (valor, _) => _executar(
+                  OperacaoPendente.deposito,
                   'Depósito concluído com sucesso.',
-                  () => api.depositar(valor),
+                  valor,
+                  null,
                 ),
               ),
               const SizedBox(height: 20),
@@ -122,8 +197,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                 numero: '02',
                 titulo: 'Sacar',
                 executar: (valor, _) => _executar(
+                  OperacaoPendente.saque,
                   'Saque concluído com sucesso.',
-                  () => api.sacar(valor),
+                  valor,
+                  null,
                 ),
               ),
               const SizedBox(height: 20),
@@ -132,8 +209,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                 titulo: 'Transferir',
                 pedirContaDestino: true,
                 executar: (valor, idDestino) => _executar(
+                  OperacaoPendente.transferencia,
                   'Transferência concluída com sucesso.',
-                  () => api.transferir(idDestino!, valor),
+                  valor,
+                  idDestino,
                 ),
               ),
             ],
@@ -182,6 +261,11 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   }
 
   Widget _cartaoSaldo() {
+    final saldo = servicoConta.saldoProvisorio;
+    final saldoConfirmado = servicoConta.saldoConfirmado;
+    final temPendentes = servicoConta.temPendentes;
+    final leitura = servicoConta.cache;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -200,9 +284,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         children: [
           const Rotulo('Visão geral', cor: corPrincipalClara),
           const SizedBox(height: 4),
-          const Text(
-            'Saldo disponível',
-            style: TextStyle(
+          Text(
+            temPendentes ? 'Saldo provisório' : 'Saldo disponível',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -210,13 +294,31 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           ),
           const SizedBox(height: 12),
           Text(
-            _saldo == null ? 'R\$ --' : formatarReais(_saldo!),
+            saldo == null ? 'R\$ --' : formatarReais(saldo),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (temPendentes && saldoConfirmado != null) ...[
+            const SizedBox(height: 10),
+            _avisoNoSaldo(
+              Icons.schedule,
+              'Pendente de sincronização · saldo confirmado pela agência: '
+              '${formatarReais(saldoConfirmado)}',
+            ),
+          ],
+          if (servicoConta.semConexao) ...[
+            const SizedBox(height: 10),
+            _avisoNoSaldo(
+              Icons.cloud_off,
+              leitura == null
+                  ? 'Sem conexão com a agência.'
+                  : 'Sem conexão com a agência · último saldo conhecido às '
+                      '${formatarHora(leitura.atualizadoEm)}',
+            ),
+          ],
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _atualizarSaldo,
@@ -232,6 +334,22 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _avisoNoSaldo(IconData icone, String texto) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icone, color: corPrincipalClara, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            texto,
+            style: const TextStyle(color: corPrincipalClara, fontSize: 13),
+          ),
+        ),
+      ],
     );
   }
 }
