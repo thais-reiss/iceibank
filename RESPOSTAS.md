@@ -229,3 +229,14 @@ Eu escolhi o sqflite, um banco de dados SQLite dentro do próprio celular, porqu
 **3. UI otimista significa mostrar o resultado esperado antes de ter certeza de que ele vai acontecer. Que risco isso traz para um aplicativo bancário, especificamente? Como seu design tenta reduzir esse risco?**
 
 O risco é a pessoa tomar decisões com base em um saldo que ainda não é real. Se o app mostra o valor de um depósito feito offline como se já estivesse na conta, a pessoa pode contar com esse dinheiro, e a operação ainda pode ser recusada ou entrar em conflito na sincronização. Para reduzir esse risco, no meu design o saldo otimista nunca aparece como definitivo. Assim, enquanto há operações pendentes, o título muda para "Saldo provisório" e a tela mostra junto o saldo confirmado pela agência, além de listar as operações pendentes em uma seção própria. O app também recusa um saque ou transferência offline maior que o saldo provisório. Por fim, se a conta mudou enquanto o app estava offline, a agência recusa a sincronização, e o app substitui o saldo provisório pelo saldo real e pede uma decisão da pessoa.
+
+## Funcionalidade adicional
+
+**Histórico de Líderes**
+
+A funcionalidade adicional que eu escolhi foi mostrar as trocas de liderança. 
+
+O app já consulta o /bully/lider a cada 3 segundos para o painel de liderança. A cada resposta, ele compara a líder informada com a última líder conhecida.
+Se a líder mudou, o app registra a troca em uma lista, com a líder anterior, a nova líder e o horário em que a mudança foi observada.
+O painel da tela principal ganhou o botão "Ver histórico de líderes", que abre uma tela com a líder atual e a lista de trocas, da mais recente para a mais antiga. Essa tela se atualiza sozinha quando uma nova troca acontece.
+Uma limitação dessa escolha é que o histórico reflete apenas o que o app observou enquanto estava aberto, porque ele fica em memória, recomeça quando o app é fechado e não registra trocas que aconteceram com o app em segundo plano.
