@@ -214,7 +214,7 @@ A simplificação existe porque o relógio vetorial é mantido por agência, e n
 
 **3. Quando a sincronização é recusada (409), a agência devolve o estado atual da conta. O que o app deveria fazer com essa informação - descartar a operação pendente, tentar de novo automaticamente, ou perguntar à pessoa usuária? Justifique sua escolha de design na Parte F.**
 
-O app deveria perguntar à pessoa, porque descartar a operação automaticamente faria um depósito ou saque desaparecer sem que a pessoa decidisse isso. Além disso, tentar de novo automaticamente também é arriscado em um aplicativo bancário, porque a operação foi decidida com base em um saldo que pode já não ser o atual, dessa forma, um saque pensado para um saldo seria reaplicado sobre outro, sem a pessoa saber. 
+O app deveria perguntar à pessoa, porque descartar a operação automaticamente faria um depósito ou saque desaparecer sem que a pessoa decidisse isso. Além disso, tentar de novo automaticamente também é arriscado em um aplicativo bancário, porque a operação foi decidida com base em um saldo que pode já não ser o atual, dessa forma, um saque pensado para um saldo seria reaplicado sobre outro, sem a pessoa saber. Por isso, na Parte F, quando a sincronização é recusada, o app avisa que a operação não pôde ser aplicada automaticamente, atualiza a tela com o saldo real devolvido pela agência e deixa a pessoa escolher entre tentar novamente, agora com o estado atual da conta, ou descartar a operação
 
 ## Parte F
 
