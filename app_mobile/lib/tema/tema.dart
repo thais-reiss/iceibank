@@ -56,3 +56,9 @@ final ThemeData temaIceiBank = ThemeData(
 String formatarReais(double valor) {
   return 'R\$ ${valor.toStringAsFixed(2).replaceAll('.', ',')}';
 }
+
+String formatarHora(DateTime momento) {
+  String doisDigitos(int n) => n.toString().padLeft(2, '0');
+  return '${doisDigitos(momento.hour)}:${doisDigitos(momento.minute)}:'
+      '${doisDigitos(momento.second)}';
+}

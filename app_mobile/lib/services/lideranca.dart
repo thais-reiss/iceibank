@@ -20,14 +20,30 @@ class EstadoLideranca {
   bool get nenhumaRespondeu => agenciaConsultada == null;
 }
 
+class TrocaLideranca {
+  final int? liderAnterior;
+  final int novaLider;
+  final DateTime momento;
+
+  TrocaLideranca({
+    required this.liderAnterior,
+    required this.novaLider,
+    required this.momento,
+  });
+}
+
 class ServicoLideranca extends ChangeNotifier {
   static const Duration intervalo = Duration(seconds: 3);
   static const Duration tempoLimite = Duration(seconds: 2);
+  static const int tamanhoMaximoHistorico = 50;
 
   EstadoLideranca? estado;
+  final List<TrocaLideranca> historico = [];
+
   Timer? _temporizador;
   bool _consultando = false;
   int _agenciaPreferida = 0;
+  int? _ultimaLiderConhecida;
 
   void iniciar() {
     if (_temporizador != null) return;
@@ -45,11 +61,31 @@ class ServicoLideranca extends ChangeNotifier {
     _consultando = true;
 
     try {
-      estado = await _perguntarAsAgencias();
+      final novoEstado = await _perguntarAsAgencias();
+      _registrarTroca(novoEstado);
+      estado = novoEstado;
       notifyListeners();
     } finally {
       _consultando = false;
     }
+  }
+
+  void _registrarTroca(EstadoLideranca novoEstado) {
+    final lider = novoEstado.lider;
+    if (lider == null || lider == _ultimaLiderConhecida) return;
+
+    historico.insert(
+      0,
+      TrocaLideranca(
+        liderAnterior: _ultimaLiderConhecida,
+        novaLider: lider,
+        momento: novoEstado.atualizadoEm,
+      ),
+    );
+    if (historico.length > tamanhoMaximoHistorico) {
+      historico.removeLast();
+    }
+    _ultimaLiderConhecida = lider;
   }
 
   Future<EstadoLideranca> _perguntarAsAgencias() async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/lideranca.dart';
+import '../telas/tela_lideranca.dart';
 import '../tema/tema.dart';
 import 'componentes.dart';
 
@@ -36,78 +37,108 @@ class _PainelLiderancaState extends State<PainelLideranca>
     }
   }
 
-  String _hora(DateTime momento) {
-    String doisDigitos(int n) => n.toString().padLeft(2, '0');
-    return '${doisDigitos(momento.hour)}:${doisDigitos(momento.minute)}:'
-        '${doisDigitos(momento.second)}';
+  void _abrirHistorico() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const TelaLideranca()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Cartao(
-      child: ListenableBuilder(
-        listenable: lideranca,
-        builder: (context, _) {
-          final estado = lideranca.estado;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Rotulo('Consenso'),
-              const SizedBox(height: 2),
-              const Text(
-                'Líder atual',
-                style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ResumoLideranca(),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _abrirHistorico,
+              style: TextButton.styleFrom(
+                foregroundColor: corPrincipal,
+                padding: EdgeInsets.zero,
               ),
-              const SizedBox(height: 14),
-              if (estado == null)
-                const Text(
-                  'Consultando as agências...',
-                  style: TextStyle(color: corTextoSuave),
-                )
-              else if (estado.nenhumaRespondeu) ...[
-                const MensagemErro('Nenhuma das 3 agências respondeu.'),
-                const SizedBox(height: 10),
-                Text(
-                  'Última tentativa às ${_hora(estado.atualizadoEm)}',
-                  style: const TextStyle(color: corTextoSuave, fontSize: 13),
-                ),
-              ] else ...[
-                Row(
-                  children: [
-                    Icon(
+              icon: const Icon(Icons.history),
+              label: const Text(
+                'Ver histórico de líderes',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ResumoLideranca extends StatelessWidget {
+  const ResumoLideranca({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: lideranca,
+      builder: (context, _) {
+        final estado = lideranca.estado;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Rotulo('Consenso'),
+            const SizedBox(height: 2),
+            const Text(
+              'Líder atual',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 14),
+            if (estado == null)
+              const Text(
+                'Consultando as agências...',
+                style: TextStyle(color: corTextoSuave),
+              )
+            else if (estado.nenhumaRespondeu) ...[
+              const MensagemErro('Nenhuma das 3 agências respondeu.'),
+              const SizedBox(height: 10),
+              Text(
+                'Última tentativa às ${formatarHora(estado.atualizadoEm)}',
+                style: const TextStyle(color: corTextoSuave, fontSize: 13),
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Icon(
+                    estado.lider == null
+                        ? Icons.how_to_vote_outlined
+                        : Icons.verified_outlined,
+                    color: corPrincipal,
+                    size: 30,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
                       estado.lider == null
-                          ? Icons.how_to_vote_outlined
-                          : Icons.verified_outlined,
-                      color: corPrincipal,
-                      size: 30,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        estado.lider == null
-                            ? 'Eleição em andamento'
-                            : 'Agência ${estado.lider}',
-                        style: const TextStyle(
-                          color: corPrincipal,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
+                          ? 'Eleição em andamento'
+                          : 'Agência ${estado.lider}',
+                      style: const TextStyle(
+                        color: corPrincipal,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Segundo a Agência ${estado.agenciaConsultada} · '
-                  'atualizado às ${_hora(estado.atualizadoEm)}',
-                  style: const TextStyle(color: corTextoSuave, fontSize: 13),
-                ),
-              ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Segundo a Agência ${estado.agenciaConsultada} · '
+                'atualizado às ${formatarHora(estado.atualizadoEm)}',
+                style: const TextStyle(color: corTextoSuave, fontSize: 13),
+              ),
             ],
-          );
-        },
-      ),
+          ],
+        );
+      },
     );
   }
 }
