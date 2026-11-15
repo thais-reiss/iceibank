@@ -215,3 +215,17 @@ A simplificação existe porque o relógio vetorial é mantido por agência, e n
 **3. Quando a sincronização é recusada (409), a agência devolve o estado atual da conta. O que o app deveria fazer com essa informação - descartar a operação pendente, tentar de novo automaticamente, ou perguntar à pessoa usuária? Justifique sua escolha de design na Parte F.**
 
 O app deveria perguntar à pessoa, porque descartar a operação automaticamente faria um depósito ou saque desaparecer sem que a pessoa decidisse isso. Além disso, tentar de novo automaticamente também é arriscado em um aplicativo bancário, porque a operação foi decidida com base em um saldo que pode já não ser o atual, dessa forma, um saque pensado para um saldo seria reaplicado sobre outro, sem a pessoa saber. 
+
+## Parte F
+
+**1. Qual biblioteca de armazenamento local você escolheu, e por quê? Quais alternativas você considerou?**
+
+Eu escolhi o sqflite, um banco de dados SQLite dentro do próprio celular, porque os dados do app se organizam naturalmente em tabelas. Uma guarda o último saldo e o último vetor conhecidos de cada conta, e a outra guarda a fila de operações pendentes, com a situação de cada uma. Também considerei as outras duas alternativas mencionadas no roteiro, o Hive e o Drift. Mas pesquisando sobre elas, vi que o Hive guarda dados como chave e valor, o que exigiria controlar a fila manualmente no código, enquanto o Drift exige uma configuração maior. Assim, dentre as opções achei melhor o sqflite.
+
+**2. Na tarefa 5, o que exatamente aconteceu na tela do app quando a sincronização foi recusada? Descreva o comportamento que você implementou e explique por que escolheu essa abordagem em vez de outra.**
+
+ Apareceu uma janela avisando que a conta foi alterada enquanto o app estava sem conexão, com o saldo real devolvido pela agência, e o cartão de saldo passou a mostrar esse saldo real em vez do provisório. A operação continuou no cartão "Operações pendentes", marcada como conflito, com os botões "Tentar novamente", que reenvia a operação com o vetor atual da conta, e "Descartar", que a remove sem enviar nada. Escolhi essa abordagem porque  descartar sozinho faria um depósito desaparecer sem a pessoa saber, e reenviar sozinho aplicaria uma operação sobre um estado que ela não viu. Assim, a decisão sobre o dinheiro continua sendo da pessoa.
+
+**3. UI otimista significa mostrar o resultado esperado antes de ter certeza de que ele vai acontecer. Que risco isso traz para um aplicativo bancário, especificamente? Como seu design tenta reduzir esse risco?**
+
+O risco é a pessoa tomar decisões com base em um saldo que ainda não é real. Se o app mostra o valor de um depósito feito offline como se já estivesse na conta, a pessoa pode contar com esse dinheiro, e a operação ainda pode ser recusada ou entrar em conflito na sincronização. Para reduzir esse risco, no meu design o saldo otimista nunca aparece como definitivo. Assim, enquanto há operações pendentes, o título muda para "Saldo provisório" e a tela mostra junto o saldo confirmado pela agência, além de listar as operações pendentes em uma seção própria. O app também recusa um saque ou transferência offline maior que o saldo provisório. Por fim, se a conta mudou enquanto o app estava offline, a agência recusa a sincronização, e o app substitui o saldo provisório pelo saldo real e pede uma decisão da pessoa.
