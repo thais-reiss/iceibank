@@ -28,4 +28,8 @@ public class RelogioVetorial {
         vetor[idAgencia] += 1;
         return vetor.clone();
     }
+
+    public synchronized int[] obterVetorAtual() {
+        return vetor.clone();
+    }
 }
