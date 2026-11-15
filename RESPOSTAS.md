@@ -201,3 +201,17 @@ O app consulta uma agência por vez e mostra o que ela respondeu, indicando a or
 O que foi reaproveitado é que o app consome a mesma API REST, com as mesmas rotas, e usa o mesmo fluxo de autenticação do frontend, enviando o token JWT no cabeçalho das requisições. Também mantive a ideia de centralizar as chamadas em um único ponto, como a função chamarApi do painel web, além do fluxo das telas e da identidade visual.
 
 O que mudou foi principalmente a rede. No emulador, localhost aponta para o próprio celular, então o app usa o endereço 10.0.2.2, e foi preciso liberar o acesso à internet e o uso de http no Android. Além disso, como a conexão de um celular é menos estável, cada requisição tem um tempo limite. O token fica na memória do app, em vez do localStorage, e a agência é descoberta pelo número da conta, sem precisar escolhê-la em uma lista, achei melhor assim por conta da tela ser menor no mobile. Por fim, o app faz consultas periódicas para o painel de liderança e as pausa quando vai para segundo plano, para não gastar bateria, uma preocupação que o site não tem.
+
+## Parte E
+
+**1. Por que a agência compara o vetor inteiro, e não só verifica se o saldo da conta mudou? O que a comparação de vetores detecta que uma simples comparação de saldo não detectaria?**
+
+Porque o saldo é apenas um valor e pode voltar a ser igual mesmo depois de várias mudanças. Por exemplo, enquanto o app estava offline, se a conta recebesse um depósito de R$ 50 e depois um saque de R$ 50, o saldo final seria o mesmo de antes, e uma comparação de saldo concluiria que nada aconteceu. O vetor não tem esse problema, porque ele conta eventos e só avança. Assim, qualquer mudança desde a última leitura do app fica registrada. Além disso, o vetor também registra o que a agência ficou sabendo de outras agências, como um crédito recebido de uma transferência.
+
+**2. Neste exemplo, qualquer mudança no vetor da agência (mesmo em uma operação de outra conta, que nada tem a ver com a sua) é tratada como conflito. Isso é uma simplificação - explique por que ela existe (lembre-se de que o vetor é por agência, não por conta) e o que seria necessário para tornar a detecção mais precisa, por conta.**
+
+A simplificação existe porque o relógio vetorial é mantido por agência, e não por conta. Por isso, um depósito em outra conta da mesma agência, ou uma eleição, faz o vetor avançar e é tratado como conflito, mesmo sem ter alterado a conta que o app está sincronizando. No estado atual, comparando apenas o vetor da agência, não é possível saber em qual conta a mudança aconteceu. Para tornar a detecção mais precisa, seria necessário guardar uma versão por conta, por exemplo, cada conta armazenaria o vetor do último evento que a alterou. 
+
+**3. Quando a sincronização é recusada (409), a agência devolve o estado atual da conta. O que o app deveria fazer com essa informação - descartar a operação pendente, tentar de novo automaticamente, ou perguntar à pessoa usuária? Justifique sua escolha de design na Parte F.**
+
+O app deveria perguntar à pessoa, porque descartar a operação automaticamente faria um depósito ou saque desaparecer sem que a pessoa decidisse isso. Além disso, tentar de novo automaticamente também é arriscado em um aplicativo bancário, porque a operação foi decidida com base em um saldo que pode já não ser o atual, dessa forma, um saque pensado para um saldo seria reaplicado sobre outro, sem a pessoa saber. 
