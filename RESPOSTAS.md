@@ -185,3 +185,19 @@ Se uma mensagem demora a chegar em uma das agências, elas não tem como saber s
 **1. Observando a saída do script, quantas vezes a liderança mudou de mãos durante a "tempestade" de eleições da subida inicial (Parte A), antes de estabilizar? Isso tem algum custo real para o sistema (rede, tempo), mesmo não afetando o resultado final?**
 
 Na subida inicial a liderança mudou de mãos duas vezes. Primeiro a agência 0 se declarou a líder, depois que subi a agência 1 ela se declarou a líder e, por fim, quando subi a agência 2 ela se declarou a líder. Assim, a liderança foi da 0 para 1 e depois da 1 para a 2, totalizando duas trocas de liderança. Sim, isso tem custo para o sistema, pois na rede cada agência que se declarou líder enviou mensagens de coordenador às outras, e essas mensagens logo se tornaram inúteis. No tempo, cada tentativa de contato com uma agência fora do ar pode esperar até o timeout de 1 segundo, e, enquanto a liderança não estabiliza, as agências podem discordar sobre quem é a líder, causando lentidão e inconsistências no sistema.
+
+## Parte D
+
+**1. Como o app decide com que frequência consultar /bully/lider? Que trade-off você considerou ao escolher esse intervalo (resposta rápida a mudanças vs. consumo de bateria/rede do celular)?**
+
+Em um intervalo fixo de 3 segundos, usando um temporizador. Escolhi esse valor por ser o mesmo intervalo do heartbeat das agências e como elas levam até 3 segundos para perceber a queda da líder, consultar com mais frequência do que isso não traria uma informação mais atualizada, só mais requisições. O custo é que cada consulta usa rede e bateria do celular, e um intervalo curto mantém o rádio do aparelho sempre ativo. Para reduzir esse custo, o app pausa as consultas quando vai para segundo plano e só retoma quando volta a ser aberto. Além disso, ele não inicia uma nova consulta enquanto a anterior não terminou, o que evita acúmulo de requisições quando a rede está lenta.
+
+**2. Se, num momento de transição, você consultasse duas agências diferentes e elas respondessem líderes diferentes (uma ainda não sabe da nova eleição), como seu app se comporta? Isso é um problema real, ou se resolve sozinho na próxima consulta?**
+
+O app consulta uma agência por vez e mostra o que ela respondeu, indicando a origem e o horário da informação. Por isso, se a agência consultada ainda não souber da nova eleição, o painel pode mostrar a líder antiga por alguns segundos, ou "Eleição em andamento" se ela não conhecer nenhuma líder. Isso não é um problema real neste sprint, porque se resolve sozinho, pois o heartbeat faz as agências convergirem em poucos segundos, e a consulta seguinte do app, 3 segundos depois, já traz a resposta correta. 
+
+**3. Compare a arquitetura do app Flutter com a do frontend web do Sprint 1: o que foi reaproveitável (conceitos, não necessariamente código) e o que precisou ser pensado de forma diferente por ser uma plataforma mobile?**
+
+O que foi reaproveitado é que o app consome a mesma API REST, com as mesmas rotas, e usa o mesmo fluxo de autenticação do frontend, enviando o token JWT no cabeçalho das requisições. Também mantive a ideia de centralizar as chamadas em um único ponto, como a função chamarApi do painel web, além do fluxo das telas e da identidade visual.
+
+O que mudou foi principalmente a rede. No emulador, localhost aponta para o próprio celular, então o app usa o endereço 10.0.2.2, e foi preciso liberar o acesso à internet e o uso de http no Android. Além disso, como a conexão de um celular é menos estável, cada requisição tem um tempo limite. O token fica na memória do app, em vez do localStorage, e a agência é descoberta pelo número da conta, sem precisar escolhê-la em uma lista, achei melhor assim por conta da tela ser menor no mobile. Por fim, o app faz consultas periódicas para o painel de liderança e as pausa quando vai para segundo plano, para não gastar bateria, uma preocupação que o site não tem.
