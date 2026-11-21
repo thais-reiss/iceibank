@@ -27,8 +27,6 @@ detectar se a conta mudou enquanto o app estava offline.
 A pasta `agencia-java` contém o backend do projeto. A pasta `agencia` contém o
 código de referência em Node.js usado durante o desenvolvimento.
 
-Vídeo: https://www.youtube.com/watch?v=6BMDYmC4tvo
-
 ## Como rodar o sistema (Java)
 
 ### Pré-requisitos
@@ -68,6 +66,30 @@ As variáveis valem apenas para o terminal onde foram definidas. A porta de cada
 | 2       | 4024  |
 
 Na primeira subida, cada agência cria no RabbitMQ a exchange `iceibank.eventos` (topic) e as suas filas: `fila-agencia-<id>` (créditos entre agências) e `fila-alertas-agencia-<id>` (alertas de saldo baixo).
+
+### 2. Analisar os logs de eventos
+
+Cada agência grava seus eventos em `agencia-java/data/eventos-agencia-<id>.jsonl`. A pasta `agencia-java` tem dois scripts que leem esses arquivos. Eles rodam direto com o comando `java`, sem compilar e sem precisar das agências no ar, mas precisam ser executados **dentro da pasta `agencia-java`**, porque procuram a pasta `data` a partir dela.
+
+**Linha do tempo causal (`MesclarLogs.java`):** imprime os eventos das 3 agências ordenados por hora, com o relógio vetorial de cada um, e lista os pares de eventos de agências diferentes que são concorrentes (nenhum vetor domina o outro).
+
+```powershell
+cd agencia-java
+java MesclarLogs.java
+```
+
+Por padrão, os eventos de eleição de líder ficam de fora. Para incluir todos os eventos:
+
+```powershell
+java MesclarLogs.java --todos
+```
+
+**Histórico de liderança (`HistoricoLideranca.java`):** lista os eventos da eleição de líder (Bully) e a linha do tempo de qual agência foi líder a partir de cada momento.
+
+```powershell
+cd agencia-java
+java HistoricoLideranca.java
+```
 
 ## Como rodar o app mobile (Flutter)
 
@@ -122,5 +144,6 @@ Dentro do emulador, `localhost` aponta para o próprio emulador, e não para o c
 - **Modo offline:** com o app logado, ligue o modo avião do emulador e faça um depósito. A operação entra no cartão "Operações pendentes" e o saldo aparece como provisório. Ao desligar o modo avião, o app sincroniza a operação sozinho.
 - **Conflito de sincronização:** faça uma operação com o app em modo avião e, antes de reconectar, altere o saldo da mesma conta pelo frontend web. Ao reconectar, o app avisa que a operação não foi aplicada, mostra o saldo real e oferece as opções "Tentar novamente" e "Descartar".
 
-
+**Vídeo Sprint 1:** https://www.youtube.com/watch?v=6BMDYmC4tvo
+**Vídeo Sprint 2:** https://www.youtube.com/watch?v=CgLPeuH_CTE 
 
