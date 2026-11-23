@@ -79,7 +79,6 @@ public class MesclarLogs {
         }
     }
 
-    // Mesma regra do ComparadorVetores da aplicação.
     private static String compararVetores(int[] v1, int[] v2) {
         boolean v1MenorOuIgual = true;
         boolean v2MenorOuIgual = true;

@@ -144,6 +144,7 @@ Dentro do emulador, `localhost` aponta para o próprio emulador, e não para o c
 - **Modo offline:** com o app logado, ligue o modo avião do emulador e faça um depósito. A operação entra no cartão "Operações pendentes" e o saldo aparece como provisório. Ao desligar o modo avião, o app sincroniza a operação sozinho.
 - **Conflito de sincronização:** faça uma operação com o app em modo avião e, antes de reconectar, altere o saldo da mesma conta pelo frontend web. Ao reconectar, o app avisa que a operação não foi aplicada, mostra o saldo real e oferece as opções "Tentar novamente" e "Descartar".
 
-**Vídeo Sprint 1:** https://www.youtube.com/watch?v=6BMDYmC4tvo
-**Vídeo Sprint 2:** https://www.youtube.com/watch?v=CgLPeuH_CTE 
+**Vídeo - Sprint 1:** https://www.youtube.com/watch?v=6BMDYmC4tvo
+**Vídeo - Sprint 2:** https://www.youtube.com/watch?v=CgLPeuH_CTE 
+**Vídeo - Sprint 3:** https://www.youtube.com/watch?v=fVllSdgMUBY 
 
