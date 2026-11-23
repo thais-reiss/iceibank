@@ -23,12 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BullyService {
 
     private static final int TIMEOUT_MS = 1000;
-
+    
     private final AgenciaConfig agenciaConfig;
     private final AgenciaEstado estado;
     private final RestClient restClient;
-
-    // volatile: a líder é lida e alterada por threads diferentes
     private volatile Integer liderAtual = null;
     private final AtomicBoolean eleicaoEmAndamento = new AtomicBoolean(false);
 
@@ -48,7 +46,6 @@ public class BullyService {
     }
 
     public void iniciarEleicao() {
-        // só entra se não houver outra eleição em andamento nesta agência
         if (!eleicaoEmAndamento.compareAndSet(false, true)) 
             return;
 
@@ -60,7 +57,7 @@ public class BullyService {
 
             for (AgenciaInfo agencia : agenciaConfig.getAgencias()) {
                 if (agencia.getId() <= idAgencia) 
-                    continue; // só as de ID maior
+                    continue; 
 
                 try {
                     int[] vetorEnvio = estado.getRelogio().aoEnviar();
@@ -72,7 +69,7 @@ public class BullyService {
                             .toBodilessEntity();
                     alguemRespondeu = true;
                 } catch (RestClientException erro) {
-                    // agência fora do ar ou não respondeu a tempo - ignora e segue
+            
                 }
             }
         } finally {
@@ -82,8 +79,6 @@ public class BullyService {
         if (!alguemRespondeu) {
             tornarMeLider();
         }
-        // se alguém maior respondeu, é essa agência quem vai conduzir a própria
-        // eleição e anunciar o resultado via /bully/coordenador
     }
 
     private void tornarMeLider() {
@@ -103,7 +98,7 @@ public class BullyService {
                         .retrieve()
                         .toBodilessEntity();
             } catch (RestClientException erro) {
-                // agência fora do ar - vai descobrir a líder quando voltar
+                                        
             }
         }
     }
@@ -113,8 +108,6 @@ public class BullyService {
         registrar("ELEICAO_RECEBIDA", vetor,
                 Map.of("de", origemId, "minhaId", agenciaConfig.getIdAgencia()));
 
-        // inicia a própria eleição em segundo plano, para a rota responder
-        // o 200 ("estou viva") na hora, sem esperar a eleição terminar
         CompletableFuture.runAsync(this::iniciarEleicao);
     }
 
@@ -129,7 +122,7 @@ public class BullyService {
         return liderAtual;
     }
 
-    // heartbeat: equivale ao setInterval(verificarLider, 3000) do Node
+
     @Scheduled(initialDelay = 3000, fixedRate = 3000)
     public void verificarLider() {
         Integer lider = liderAtual;
@@ -139,7 +132,7 @@ public class BullyService {
             return;
         }
         if (lider == agenciaConfig.getIdAgencia()) 
-            return; // eu sou a líder, não preciso verificar
+            return; 
 
         try {
             restClient.get()
